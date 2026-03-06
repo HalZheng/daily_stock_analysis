@@ -1,10 +1,18 @@
 import type React from 'react';
 import { useEffect } from 'react';
-import { useSystemConfig } from '../hooks';
-import { SettingsAlert, SettingsField, SettingsLoading } from '../components/settings';
+import { useAuth, useSystemConfig } from '../hooks';
+import {
+  ChangePasswordCard,
+  ImageStockExtractor,
+  LLMChannelEditor,
+  SettingsAlert,
+  SettingsField,
+  SettingsLoading,
+} from '../components/settings';
 import { getCategoryDescriptionZh, getCategoryTitleZh } from '../utils/systemConfigI18n';
 
 const SettingsPage: React.FC = () => {
+  const { passwordChangeable } = useAuth();
   const {
     categories,
     itemsByCategory,
@@ -24,6 +32,8 @@ const SettingsPage: React.FC = () => {
     retry,
     save,
     setDraftValue,
+    configVersion,
+    maskToken,
   } = useSystemConfig();
 
   useEffect(() => {
@@ -44,7 +54,15 @@ const SettingsPage: React.FC = () => {
     };
   }, [clearToast, toast]);
 
-  const activeItems = itemsByCategory[activeCategory] || [];
+  const rawActiveItems = itemsByCategory[activeCategory] || [];
+
+  // Hide per-channel LLM_*_ env vars from the normal field list;
+  // they are managed by the LLMChannelEditor component instead.
+  const LLM_CHANNEL_KEY_RE = /^LLM_[A-Z0-9]+_(BASE_URL|API_KEY|API_KEYS|MODELS|EXTRA_HEADERS)$/;
+  const activeItems =
+    activeCategory === 'ai_model'
+      ? rawActiveItems.filter((item) => !LLM_CHANNEL_KEY_RE.test(item.key))
+      : rawActiveItems;
 
   return (
     <div className="min-h-screen px-4 pb-6 pt-4 md:px-6">
@@ -129,6 +147,33 @@ const SettingsPage: React.FC = () => {
           </aside>
 
           <section className="space-y-3 rounded-2xl border border-white/8 bg-card/60 p-4 backdrop-blur-sm">
+            {activeCategory === 'base' ? (
+              <div className="space-y-3">
+                <ImageStockExtractor
+                  stockListValue={
+                    (activeItems.find((i) => i.key === 'STOCK_LIST')?.value as string) ?? ''
+                  }
+                  configVersion={configVersion}
+                  maskToken={maskToken}
+                  onMerged={() => void load()}
+                  disabled={isSaving || isLoading}
+                />
+              </div>
+            ) : null}
+            {activeCategory === 'ai_model' ? (
+              <LLMChannelEditor
+                items={rawActiveItems}
+                configVersion={configVersion}
+                maskToken={maskToken}
+                onSaved={() => void load()}
+                disabled={isSaving || isLoading}
+              />
+            ) : null}
+            {activeCategory === 'system' && passwordChangeable ? (
+              <div className="space-y-3">
+                <ChangePasswordCard />
+              </div>
+            ) : null}
             {activeItems.length ? (
               activeItems.map((item) => (
                 <SettingsField
