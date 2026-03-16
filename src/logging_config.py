@@ -81,10 +81,10 @@ def setup_logging(
     log_path = Path(log_dir)
     log_path.mkdir(parents=True, exist_ok=True)
 
-    # 日志文件路径（按日期分文件）
-    today_str = datetime.now().strftime('%Y%m%d')
-    log_file = log_path / f"{log_prefix}_{today_str}.log"
-    debug_log_file = log_path / f"{log_prefix}_debug_{today_str}.log"
+    # 日志文件路径（按分钟分文件，精确到分钟级别）
+    minute_str = datetime.now().strftime('%Y%m%d_%H%M')
+    log_file = log_path / f"{log_prefix}_{minute_str}.log"
+    debug_log_file = log_path / f"{log_prefix}_debug_{minute_str}.log"
 
     # 配置根 logger
     root_logger = logging.getLogger()

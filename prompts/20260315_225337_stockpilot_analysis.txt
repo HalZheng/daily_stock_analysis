@@ -1,0 +1,2244 @@
+# StockPilot 智能投研分析
+生成时间：2026-03-15 22:53:37
+================================================================================
+
+# 角色：StockPilot 智能投研专家
+
+# 任务
+你是一位专业的投资顾问。请分析以下包含市场环境、持仓状态和自选股技术指标的 JSON 数据，并给出操作建议。
+
+# 用户画像
+## 投资风格
+  - Focus on medium to long-term returns and industry leaders
+  - Accept short-term quick trades in hot sectors
+  - Strict stop-loss at 8%
+
+## 回答偏好
+  - Only list securities that require action, skip hold/observe positions
+  - Pay close attention to KDJ indicators for buy signals
+  - Provide specific operation suggestions with approximate amounts or ratios based on current market time
+
+# 数据 (JSON)
+{
+  "user_profile": {
+    "name": "Default User",
+    "style": [
+      "Focus on medium to long-term returns and industry leaders",
+      "Accept short-term quick trades in hot sectors",
+      "Strict stop-loss at 8%"
+    ],
+    "preferences": [
+      "Only list securities that require action, skip hold/observe positions",
+      "Pay close attention to KDJ indicators for buy signals",
+      "Provide specific operation suggestions with approximate amounts or ratios based on current market time"
+    ],
+    "cash": 15000.0,
+    "total_capital": 230000.0
+  },
+  "market_context": {
+    "stage": {
+      "stage": "休市(周末)",
+      "date": "2026-03-15",
+      "time": "22:53:00"
+    },
+    "indices": {
+      "上证指数": {
+        "name": "上证指数",
+        "code": "000001.SH",
+        "price": 10.93,
+        "change_pct": -0.09,
+        "trend": "弱势多头",
+        "technical": {
+          "kdj_signal": "多头",
+          "boll_signal": "正常",
+          "macd_signal": "红柱"
+        }
+      },
+      "沪深300": {
+        "name": "沪深300",
+        "code": "000300.SH",
+        "price": 4669.14,
+        "change_pct": -0.39,
+        "trend": "弱势多头",
+        "technical": {
+          "kdj_signal": "中性",
+          "boll_signal": "正常",
+          "macd_signal": "空头"
+        }
+      },
+      "创业板指": {
+        "name": "创业板指",
+        "code": "399006.SZ",
+        "price": 3310.28,
+        "change_pct": -0.22,
+        "trend": "弱势多头",
+        "technical": {
+          "kdj_signal": "多头",
+          "boll_signal": "正常",
+          "macd_signal": "红柱"
+        }
+      },
+      "深证成指": {
+        "name": "深证成指",
+        "code": "399001.SZ",
+        "price": 14280.78,
+        "change_pct": -0.65,
+        "trend": "弱势多头",
+        "technical": {
+          "kdj_signal": "中性",
+          "boll_signal": "正常",
+          "macd_signal": "死叉"
+        }
+      }
+    }
+  },
+  "portfolio": [
+    {
+      "code": "513100.SH",
+      "name": "纳指ETF",
+      "asset_type": "ETF",
+      "groups": [
+        "当前持仓",
+        "指数工具"
+      ],
+      "tags": [
+        "美股",
+        "盈利持仓"
+      ],
+      "technical": {
+        "price": 1.6908,
+        "change_pct": -1.66,
+        "volume_ratio": 0.0,
+        "trend": "空头排列",
+        "trend_strength": 25,
+        "kdj": {
+          "K": 31.9,
+          "D": 37.4,
+          "J": 20.7,
+          "signal": "死叉"
+        },
+        "boll": {
+          "upper": 1.76,
+          "mid": 1.73,
+          "lower": 1.69,
+          "position": "0%",
+          "signal": "收敛变盘前夕"
+        },
+        "macd": {
+          "DIF": -0.016,
+          "DEA": -0.015,
+          "HIST": -0.002,
+          "signal": "死叉"
+        },
+        "rsi": {
+          "RSI6": 27.3,
+          "RSI12": 39.4,
+          "RSI24": 37.0,
+          "signal": "弱势"
+        },
+        "ma": {
+          "MA5": 1.71,
+          "MA10": 1.72,
+          "MA20": 1.73,
+          "MA60": 1.77
+        },
+        "bias": {
+          "bias_ma5": "-1.19%",
+          "bias_ma10": "-1.56%",
+          "bias_ma20": "-2.03%"
+        },
+        "support_levels": [],
+        "resistance_levels": [
+          1.75
+        ],
+        "weekly_trend": "空头趋势",
+        "indicator_trend": {
+          "kdj_trend": "K线向下，空头排列",
+          "kdj_cross_days": 1,
+          "kdj_cross_type": "死叉",
+          "macd_hist_trend": "绿柱刚出现",
+          "macd_hist_days": 1,
+          "rsi_trend": "超卖区域，可能反弹",
+          "volume_price_signal": "量价正常"
+        },
+        "weekly_indicators": {
+          "kdj": {
+            "K": 47.2,
+            "D": 46.4,
+            "J": 48.8,
+            "signal": "周线金叉"
+          },
+          "macd": {
+            "DIF": -0.002,
+            "DEA": 0.012,
+            "HIST": -0.028,
+            "hist_trend": "绿柱放大",
+            "turning_signal": "趋势延续"
+          },
+          "trend": "周线空头趋势"
+        },
+        "rs_strength": {
+          "vs_index": 0.99,
+          "signal": "与大盘同步",
+          "trend": "相对强度上升中"
+        },
+        "divergence": {
+          "macd_divergence": "none",
+          "macd_divergence_type": "",
+          "kdj_divergence": "none",
+          "kdj_divergence_type": ""
+        },
+        "volatility": {
+          "atr": 0.02,
+          "atr_pct": "0.90%",
+          "signal": "低波动"
+        },
+        "consecutive_days": {
+          "up_days": 0,
+          "down_days": 3,
+          "signal": "连续下跌3日"
+        }
+      },
+      "weekly_trend": "空头趋势",
+      "strategy_note": "纳指ETF，盈利6%+，长期持有",
+      "position": {
+        "shares": 8000,
+        "cost": 1.653,
+        "current_value": 13526.400000000001,
+        "profit_pct": "2.29%"
+      },
+      "recent_news": [
+        "纳斯达克100指数ETF今日合计成交额34.79亿元，环比增加89.96%",
+        "盘前资讯｜三只个股获纳入富时中国A50指数"
+      ]
+    },
+    {
+      "code": "510300.SH",
+      "name": "300ETF",
+      "asset_type": "ETF",
+      "groups": [
+        "当前持仓",
+        "指数工具"
+      ],
+      "tags": [
+        "大盘",
+        "盈利持仓"
+      ],
+      "technical": {
+        "price": 4.6789,
+        "change_pct": -0.39,
+        "volume_ratio": 0.0,
+        "trend": "弱势多头",
+        "trend_strength": 55,
+        "kdj": {
+          "K": 59.9,
+          "D": 52.1,
+          "J": 75.4,
+          "signal": "多头"
+        },
+        "boll": {
+          "upper": 4.77,
+          "mid": 4.7,
+          "lower": 4.62,
+          "position": "40%",
+          "signal": "正常"
+        },
+        "macd": {
+          "DIF": -0.014,
+          "DEA": -0.017,
+          "HIST": 0.005,
+          "signal": "红柱"
+        },
+        "rsi": {
+          "RSI6": 55.9,
+          "RSI12": 41.5,
+          "RSI24": 48.0,
+          "signal": "弱势"
+        },
+        "ma": {
+          "MA5": 4.68,
+          "MA10": 4.67,
+          "MA20": 4.7,
+          "MA60": 4.74
+        },
+        "bias": {
+          "bias_ma5": "-0.02%",
+          "bias_ma10": "0.09%",
+          "bias_ma20": "-0.35%"
+        },
+        "support_levels": [
+          4.67,
+          4.61
+        ],
+        "resistance_levels": [
+          4.75
+        ],
+        "weekly_trend": "空头趋势",
+        "indicator_trend": {
+          "kdj_trend": "K线向上，多头排列",
+          "kdj_cross_days": 0,
+          "kdj_cross_type": "",
+          "macd_hist_trend": "红柱缩短",
+          "macd_hist_days": 0,
+          "rsi_trend": "RSI向下，动能减弱",
+          "volume_price_signal": "量价正常"
+        },
+        "weekly_indicators": {
+          "kdj": {
+            "K": 46.7,
+            "D": 45.1,
+            "J": 50.0,
+            "signal": "周线多头"
+          },
+          "macd": {
+            "DIF": 0.056,
+            "DEA": 0.081,
+            "HIST": -0.05,
+            "hist_trend": "绿柱放大",
+            "turning_signal": "趋势延续"
+          },
+          "trend": "周线空头趋势"
+        },
+        "rs_strength": {
+          "vs_index": 1.01,
+          "signal": "与大盘同步",
+          "trend": "相对强度上升中"
+        },
+        "divergence": {
+          "macd_divergence": "底背离",
+          "macd_divergence_type": "股价新低但MACD未创新低，可能反弹",
+          "kdj_divergence": "none",
+          "kdj_divergence_type": ""
+        },
+        "volatility": {
+          "atr": 0.03,
+          "atr_pct": "0.72%",
+          "signal": "低波动"
+        },
+        "consecutive_days": {
+          "up_days": 0,
+          "down_days": 2,
+          "signal": "下跌趋势"
+        }
+      },
+      "weekly_trend": "空头趋势",
+      "strategy_note": "沪深300ETF，盈利14%+，定投持有",
+      "position": {
+        "shares": 2100,
+        "cost": 4.075,
+        "current_value": 9825.689999999999,
+        "profit_pct": "14.82%"
+      },
+      "recent_news": [
+        "节前资金接力进场 沪深300ETF华泰柏瑞（510300）、A500ETF华泰柏瑞（563360）近两个交易日获资金净流入",
+        "算电协同+token出海提振电力板块景气度，电力ETF5615603月以来累计“吸金”超16亿"
+      ]
+    },
+    {
+      "code": "600233.SH",
+      "name": "圆通速递",
+      "asset_type": "Stock",
+      "groups": [
+        "当前持仓",
+        "物流快递"
+      ],
+      "tags": [
+        "盈利持仓",
+        "快递龙头"
+      ],
+      "technical": {
+        "price": 20.7,
+        "change_pct": 5.02,
+        "volume_ratio": 1.65,
+        "trend": "强势多头",
+        "trend_strength": 90,
+        "kdj": {
+          "K": 83.0,
+          "D": 76.7,
+          "J": 95.6,
+          "signal": "多头"
+        },
+        "boll": {
+          "upper": 20.51,
+          "mid": 18.79,
+          "lower": 17.07,
+          "position": "105%",
+          "signal": "突破上轨"
+        },
+        "macd": {
+          "DIF": 0.676,
+          "DEA": 0.54,
+          "HIST": 0.271,
+          "signal": "多头增强"
+        },
+        "rsi": {
+          "RSI6": 82.3,
+          "RSI12": 78.5,
+          "RSI24": 74.9,
+          "signal": "超买"
+        },
+        "ma": {
+          "MA5": 19.78,
+          "MA10": 19.44,
+          "MA20": 18.79,
+          "MA60": 17.6
+        },
+        "bias": {
+          "bias_ma5": "4.66%",
+          "bias_ma10": "6.48%",
+          "bias_ma20": "10.16%"
+        },
+        "support_levels": [
+          17.4
+        ],
+        "resistance_levels": [
+          20.9
+        ],
+        "weekly_trend": "空头趋势",
+        "indicator_trend": {
+          "kdj_trend": "K线向上，多头排列",
+          "kdj_cross_days": 0,
+          "kdj_cross_type": "",
+          "macd_hist_trend": "红柱放大中",
+          "macd_hist_days": 0,
+          "rsi_trend": "超买区域，注意回调风险",
+          "volume_price_signal": "放量上涨，买盘积极"
+        },
+        "weekly_indicators": {
+          "kdj": {
+            "K": 53.6,
+            "D": 56.6,
+            "J": 47.5,
+            "signal": "周线空头"
+          },
+          "macd": {
+            "DIF": 0.81,
+            "DEA": 0.506,
+            "HIST": 0.607,
+            "hist_trend": "红柱放大",
+            "turning_signal": "趋势延续"
+          },
+          "trend": "周线空头趋势"
+        },
+        "rs_strength": {
+          "vs_index": 1.15,
+          "signal": "强于大盘15%",
+          "trend": "相对强度上升中"
+        },
+        "divergence": {
+          "macd_divergence": "none",
+          "macd_divergence_type": "",
+          "kdj_divergence": "none",
+          "kdj_divergence_type": ""
+        },
+        "volatility": {
+          "atr": 0.76,
+          "atr_pct": "3.65%",
+          "signal": "高波动"
+        },
+        "consecutive_days": {
+          "up_days": 1,
+          "down_days": 0,
+          "signal": "上涨趋势"
+        }
+      },
+      "weekly_trend": "空头趋势",
+      "strategy_note": "盈利20%+，可考虑分批止盈",
+      "position": {
+        "shares": 800,
+        "cost": 17.189,
+        "current_value": 16560.0,
+        "profit_pct": "20.43%"
+      },
+      "capital_flow_3d": "3127.0万",
+      "recent_news": [
+        "25.26亿元主力资金今日撤离交通运输板块",
+        "交通运输行业资金流出榜：招商轮船、招商南油等净流出资金居前"
+      ]
+    },
+    {
+      "code": "601398.SH",
+      "name": "工商银行",
+      "asset_type": "Stock",
+      "groups": [
+        "当前持仓",
+        "银行"
+      ],
+      "tags": [
+        "国有大行",
+        "高股息"
+      ],
+      "technical": {
+        "price": 7.2,
+        "change_pct": 0.56,
+        "volume_ratio": 1.16,
+        "trend": "弱势多头",
+        "trend_strength": 55,
+        "kdj": {
+          "K": 82.6,
+          "D": 70.7,
+          "J": 106.4,
+          "signal": "超买"
+        },
+        "boll": {
+          "upper": 7.34,
+          "mid": 7.12,
+          "lower": 6.9,
+          "position": "68%",
+          "signal": "正常"
+        },
+        "macd": {
+          "DIF": -0.063,
+          "DEA": -0.096,
+          "HIST": 0.065,
+          "signal": "红柱"
+        },
+        "rsi": {
+          "RSI6": 69.6,
+          "RSI12": 61.9,
+          "RSI24": 48.1,
+          "signal": "强势"
+        },
+        "ma": {
+          "MA5": 7.12,
+          "MA10": 7.1,
+          "MA20": 7.12,
+          "MA60": 7.46
+        },
+        "bias": {
+          "bias_ma5": "1.07%",
+          "bias_ma10": "1.41%",
+          "bias_ma20": "1.12%"
+        },
+        "support_levels": [
+          7.12,
+          7.12,
+          7.1
+        ],
+        "resistance_levels": [
+          7.35
+        ],
+        "weekly_trend": "空头趋势",
+        "indicator_trend": {
+          "kdj_trend": "K线向上，多头排列",
+          "kdj_cross_days": 0,
+          "kdj_cross_type": "",
+          "macd_hist_trend": "红柱放大中",
+          "macd_hist_days": 8,
+          "rsi_trend": "RSI向上，动能增强",
+          "volume_price_signal": "放量上涨，买盘积极"
+        },
+        "weekly_indicators": {
+          "kdj": {
+            "K": 42.2,
+            "D": 33.8,
+            "J": 59.0,
+            "signal": "周线多头"
+          },
+          "macd": {
+            "DIF": -0.137,
+            "DEA": -0.067,
+            "HIST": -0.139,
+            "hist_trend": "绿柱缩短",
+            "turning_signal": "绿柱缩短，即将拐头"
+          },
+          "trend": "周线空头趋势"
+        },
+        "rs_strength": {
+          "vs_index": 0.99,
+          "signal": "与大盘同步",
+          "trend": "相对强度上升中"
+        },
+        "divergence": {
+          "macd_divergence": "none",
+          "macd_divergence_type": "",
+          "kdj_divergence": "none",
+          "kdj_divergence_type": ""
+        },
+        "volatility": {
+          "atr": 0.11,
+          "atr_pct": "1.51%",
+          "signal": "低波动"
+        },
+        "consecutive_days": {
+          "up_days": 3,
+          "down_days": 0,
+          "signal": "连续上涨3日"
+        }
+      },
+      "weekly_trend": "空头趋势",
+      "strategy_note": "银行股，高股息策略",
+      "position": {
+        "shares": 700,
+        "cost": 7.257,
+        "current_value": 5040.0,
+        "profit_pct": "-0.79%"
+      },
+      "capital_flow_3d": "29441.0万",
+      "recent_news": [
+        "银行板块表现亮眼",
+        "银行行业今日净流入资金8.65亿元，招商银行等8股净流入资金超5000万元"
+      ]
+    },
+    {
+      "code": "002594.SZ",
+      "name": "比亚迪",
+      "asset_type": "Stock",
+      "groups": [
+        "当前持仓",
+        "新能源"
+      ],
+      "tags": [
+        "新能源汽车",
+        "成长股"
+      ],
+      "technical": {
+        "price": 99.67,
+        "change_pct": 0.58,
+        "volume_ratio": 0.74,
+        "trend": "强势多头",
+        "trend_strength": 90,
+        "kdj": {
+          "K": 85.3,
+          "D": 81.5,
+          "J": 93.0,
+          "signal": "多头"
+        },
+        "boll": {
+          "upper": 100.81,
+          "mid": 93.7,
+          "lower": 86.6,
+          "position": "92%",
+          "signal": "正常"
+        },
+        "macd": {
+          "DIF": 1.584,
+          "DEA": 0.67,
+          "HIST": 1.827,
+          "signal": "多头"
+        },
+        "rsi": {
+          "RSI6": 79.0,
+          "RSI12": 68.3,
+          "RSI24": 62.4,
+          "signal": "强势"
+        },
+        "ma": {
+          "MA5": 98.42,
+          "MA10": 96.82,
+          "MA20": 93.7,
+          "MA60": 94.53
+        },
+        "bias": {
+          "bias_ma5": "1.27%",
+          "bias_ma10": "2.94%",
+          "bias_ma20": "6.37%"
+        },
+        "support_levels": [
+          98.42,
+          96.82,
+          87.72
+        ],
+        "resistance_levels": [
+          100.79
+        ],
+        "weekly_trend": "空头趋势",
+        "indicator_trend": {
+          "kdj_trend": "K线向上，多头排列",
+          "kdj_cross_days": 0,
+          "kdj_cross_type": "",
+          "macd_hist_trend": "红柱缩短",
+          "macd_hist_days": 0,
+          "rsi_trend": "超买区域，注意回调风险",
+          "volume_price_signal": "量价正常"
+        },
+        "weekly_indicators": {
+          "kdj": {
+            "K": 45.4,
+            "D": 39.9,
+            "J": 56.4,
+            "signal": "周线多头"
+          },
+          "macd": {
+            "DIF": -2.979,
+            "DEA": -3.432,
+            "HIST": 0.905,
+            "hist_trend": "红柱放大",
+            "turning_signal": "刚翻红，趋势转强"
+          },
+          "trend": "周线空头趋势"
+        },
+        "rs_strength": {
+          "vs_index": 1.11,
+          "signal": "强于大盘11%",
+          "trend": "相对强度上升中"
+        },
+        "divergence": {
+          "macd_divergence": "none",
+          "macd_divergence_type": "",
+          "kdj_divergence": "none",
+          "kdj_divergence_type": ""
+        },
+        "volatility": {
+          "atr": 3.09,
+          "atr_pct": "3.10%",
+          "signal": "高波动"
+        },
+        "consecutive_days": {
+          "up_days": 1,
+          "down_days": 0,
+          "signal": "上涨趋势"
+        }
+      },
+      "weekly_trend": "空头趋势",
+      "strategy_note": "微亏，关注新能源政策",
+      "position": {
+        "shares": 300,
+        "cost": 99.867,
+        "current_value": 29901.0,
+        "profit_pct": "-0.20%"
+      },
+      "capital_flow_3d": "118185.3万",
+      "recent_news": [
+        "002594，重磅发布！午后飙涨",
+        "比亚迪注册多枚“比亚迪天算”商标"
+      ]
+    },
+    {
+      "code": "600900.SH",
+      "name": "长江电力",
+      "asset_type": "Stock",
+      "groups": [
+        "当前持仓",
+        "公用事业"
+      ],
+      "tags": [
+        "水电龙头",
+        "防御性"
+      ],
+      "technical": {
+        "price": 27.42,
+        "change_pct": -0.29,
+        "volume_ratio": 0.77,
+        "trend": "多头排列",
+        "trend_strength": 75,
+        "kdj": {
+          "K": 81.9,
+          "D": 79.1,
+          "J": 87.6,
+          "signal": "中性"
+        },
+        "boll": {
+          "upper": 27.75,
+          "mid": 26.64,
+          "lower": 25.54,
+          "position": "85%",
+          "signal": "正常"
+        },
+        "macd": {
+          "DIF": 0.265,
+          "DEA": 0.137,
+          "HIST": 0.256,
+          "signal": "多头"
+        },
+        "rsi": {
+          "RSI6": 78.3,
+          "RSI12": 91.9,
+          "RSI24": 68.5,
+          "signal": "超买"
+        },
+        "ma": {
+          "MA5": 27.31,
+          "MA10": 27.14,
+          "MA20": 26.64,
+          "MA60": 26.79
+        },
+        "bias": {
+          "bias_ma5": "0.39%",
+          "bias_ma10": "1.02%",
+          "bias_ma20": "2.92%"
+        },
+        "support_levels": [
+          27.31,
+          27.14,
+          26.64
+        ],
+        "resistance_levels": [
+          27.63
+        ],
+        "weekly_trend": "空头趋势",
+        "indicator_trend": {
+          "kdj_trend": "K线走平，多头减弱",
+          "kdj_cross_days": 0,
+          "kdj_cross_type": "",
+          "macd_hist_trend": "红柱缩短",
+          "macd_hist_days": 0,
+          "rsi_trend": "超买区域，注意回调风险",
+          "volume_price_signal": "缩量下跌，卖盘枯竭"
+        },
+        "weekly_indicators": {
+          "kdj": {
+            "K": 45.4,
+            "D": 38.4,
+            "J": 59.3,
+            "signal": "周线多头"
+          },
+          "macd": {
+            "DIF": -0.41,
+            "DEA": -0.474,
+            "HIST": 0.13,
+            "hist_trend": "红柱放大",
+            "turning_signal": "刚翻红，趋势转强"
+          },
+          "trend": "周线空头趋势"
+        },
+        "rs_strength": {
+          "vs_index": 1.04,
+          "signal": "与大盘同步",
+          "trend": "相对强度上升中"
+        },
+        "divergence": {
+          "macd_divergence": "none",
+          "macd_divergence_type": "",
+          "kdj_divergence": "none",
+          "kdj_divergence_type": ""
+        },
+        "volatility": {
+          "atr": 0.37,
+          "atr_pct": "1.35%",
+          "signal": "低波动"
+        },
+        "consecutive_days": {
+          "up_days": 0,
+          "down_days": 1,
+          "signal": "下跌趋势"
+        }
+      },
+      "weekly_trend": "空头趋势",
+      "strategy_note": "公用事业龙头，防御性持仓",
+      "position": {
+        "shares": 500,
+        "cost": 27.578,
+        "current_value": 13710.0,
+        "profit_pct": "-0.57%"
+      },
+      "capital_flow_3d": "22549.3万",
+      "recent_news": [
+        "4只个股大宗交易超5000万元",
+        "【盘中播报】34只个股突破半年线"
+      ]
+    },
+    {
+      "code": "600030.SH",
+      "name": "中信证券",
+      "asset_type": "Stock",
+      "groups": [
+        "当前持仓",
+        "券商"
+      ],
+      "tags": [
+        "券商龙头",
+        "牛市旗手"
+      ],
+      "technical": {
+        "price": 25.75,
+        "change_pct": -0.69,
+        "volume_ratio": 0.85,
+        "trend": "空头排列",
+        "trend_strength": 25,
+        "kdj": {
+          "K": 14.7,
+          "D": 16.3,
+          "J": 11.3,
+          "signal": "死叉"
+        },
+        "boll": {
+          "upper": 28.71,
+          "mid": 27.01,
+          "lower": 25.3,
+          "position": "13%",
+          "signal": "正常"
+        },
+        "macd": {
+          "DIF": -0.543,
+          "DEA": -0.427,
+          "HIST": -0.232,
+          "signal": "空头"
+        },
+        "rsi": {
+          "RSI6": 33.6,
+          "RSI12": 17.6,
+          "RSI24": 28.9,
+          "signal": "超卖"
+        },
+        "ma": {
+          "MA5": 25.96,
+          "MA10": 26.24,
+          "MA20": 27.01,
+          "MA60": 27.8
+        },
+        "bias": {
+          "bias_ma5": "-0.80%",
+          "bias_ma10": "-1.88%",
+          "bias_ma20": "-4.65%"
+        },
+        "support_levels": [
+          25.63
+        ],
+        "resistance_levels": [
+          28.18
+        ],
+        "weekly_trend": "空头趋势",
+        "indicator_trend": {
+          "kdj_trend": "K线向下，空头排列",
+          "kdj_cross_days": 1,
+          "kdj_cross_type": "死叉",
+          "macd_hist_trend": "绿柱缩短",
+          "macd_hist_days": 0,
+          "rsi_trend": "RSI向下，动能减弱",
+          "volume_price_signal": "缩量下跌，卖盘枯竭"
+        },
+        "weekly_indicators": {
+          "kdj": {
+            "K": 44.6,
+            "D": 39.1,
+            "J": 55.6,
+            "signal": "周线多头"
+          },
+          "macd": {
+            "DIF": -0.492,
+            "DEA": -0.275,
+            "HIST": -0.434,
+            "hist_trend": "绿柱放大",
+            "turning_signal": "趋势延续"
+          },
+          "trend": "周线空头趋势"
+        },
+        "rs_strength": {
+          "vs_index": 0.92,
+          "signal": "与大盘同步",
+          "trend": "相对强度下降中"
+        },
+        "divergence": {
+          "macd_divergence": "none",
+          "macd_divergence_type": "",
+          "kdj_divergence": "none",
+          "kdj_divergence_type": ""
+        },
+        "volatility": {
+          "atr": 0.43,
+          "atr_pct": "1.66%",
+          "signal": "低波动"
+        },
+        "consecutive_days": {
+          "up_days": 0,
+          "down_days": 3,
+          "signal": "连续下跌3日"
+        }
+      },
+      "weekly_trend": "空头趋势",
+      "strategy_note": "券商龙头，亏损2.7%，等待行情",
+      "position": {
+        "shares": 200,
+        "cost": 26.485,
+        "current_value": 5150.0,
+        "profit_pct": "-2.78%"
+      },
+      "capital_flow_3d": "-48016.6万",
+      "recent_news": [
+        "一名员工被问话，中信证券核实香港子公司遭监管调查",
+        "中信证券回应子公司被查事件：经营状况未受影响"
+      ]
+    },
+    {
+      "code": "603288.SH",
+      "name": "海天味业",
+      "asset_type": "Stock",
+      "groups": [
+        "当前持仓",
+        "消费"
+      ],
+      "tags": [
+        "调味品龙头",
+        "消费白马"
+      ],
+      "technical": {
+        "price": 37.79,
+        "change_pct": 2.08,
+        "volume_ratio": 1.67,
+        "trend": "多头排列",
+        "trend_strength": 75,
+        "kdj": {
+          "K": 81.4,
+          "D": 74.5,
+          "J": 95.1,
+          "signal": "多头"
+        },
+        "boll": {
+          "upper": 37.9,
+          "mid": 36.49,
+          "lower": 35.07,
+          "position": "96%",
+          "signal": "正常"
+        },
+        "macd": {
+          "DIF": 0.263,
+          "DEA": 0.066,
+          "HIST": 0.395,
+          "signal": "多头增强"
+        },
+        "rsi": {
+          "RSI6": 84.7,
+          "RSI12": 71.1,
+          "RSI24": 63.7,
+          "signal": "超买"
+        },
+        "ma": {
+          "MA5": 37.36,
+          "MA10": 36.7,
+          "MA20": 36.49,
+          "MA60": 36.61
+        },
+        "bias": {
+          "bias_ma5": "1.16%",
+          "bias_ma10": "2.97%",
+          "bias_ma20": "3.57%"
+        },
+        "support_levels": [
+          37.36,
+          36.7,
+          36.49
+        ],
+        "resistance_levels": [
+          38.3
+        ],
+        "weekly_trend": "空头趋势",
+        "indicator_trend": {
+          "kdj_trend": "K线向上，多头排列",
+          "kdj_cross_days": 0,
+          "kdj_cross_type": "",
+          "macd_hist_trend": "红柱放大中",
+          "macd_hist_days": 6,
+          "rsi_trend": "超买区域，注意回调风险",
+          "volume_price_signal": "放量上涨，买盘积极"
+        },
+        "weekly_indicators": {
+          "kdj": {
+            "K": 46.9,
+            "D": 42.5,
+            "J": 55.8,
+            "signal": "周线多头"
+          },
+          "macd": {
+            "DIF": -0.412,
+            "DEA": -0.528,
+            "HIST": 0.232,
+            "hist_trend": "红柱放大",
+            "turning_signal": "趋势延续"
+          },
+          "trend": "周线空头趋势"
+        },
+        "rs_strength": {
+          "vs_index": 1.02,
+          "signal": "与大盘同步",
+          "trend": "相对强度上升中"
+        },
+        "divergence": {
+          "macd_divergence": "none",
+          "macd_divergence_type": "",
+          "kdj_divergence": "none",
+          "kdj_divergence_type": ""
+        },
+        "volatility": {
+          "atr": 0.73,
+          "atr_pct": "1.93%",
+          "signal": "低波动"
+        },
+        "consecutive_days": {
+          "up_days": 1,
+          "down_days": 0,
+          "signal": "上涨趋势"
+        }
+      },
+      "weekly_trend": "空头趋势",
+      "strategy_note": "消费白马，小幅亏损",
+      "position": {
+        "shares": 200,
+        "cost": 38.345,
+        "current_value": 7558.0,
+        "profit_pct": "-1.45%"
+      },
+      "capital_flow_3d": "-2102.9万",
+      "recent_news": [
+        "131只股中线走稳 站上半年线",
+        "104只股中线走稳 站上半年线"
+      ]
+    },
+    {
+      "code": "601006.SH",
+      "name": "大秦铁路",
+      "asset_type": "Stock",
+      "groups": [
+        "当前持仓",
+        "交通运输"
+      ],
+      "tags": [
+        "铁路运输",
+        "高股息"
+      ],
+      "technical": {
+        "price": 5.34,
+        "change_pct": -1.29,
+        "volume_ratio": 1.06,
+        "trend": "多头排列",
+        "trend_strength": 75,
+        "kdj": {
+          "K": 80.9,
+          "D": 77.9,
+          "J": 86.8,
+          "signal": "中性"
+        },
+        "boll": {
+          "upper": 5.38,
+          "mid": 5.16,
+          "lower": 4.95,
+          "position": "92%",
+          "signal": "正常"
+        },
+        "macd": {
+          "DIF": 0.06,
+          "DEA": 0.029,
+          "HIST": 0.063,
+          "signal": "多头"
+        },
+        "rsi": {
+          "RSI6": 75.9,
+          "RSI12": 76.6,
+          "RSI24": 69.5,
+          "signal": "超买"
+        },
+        "ma": {
+          "MA5": 5.31,
+          "MA10": 5.25,
+          "MA20": 5.16,
+          "MA60": 5.17
+        },
+        "bias": {
+          "bias_ma5": "0.56%",
+          "bias_ma10": "1.79%",
+          "bias_ma20": "3.47%"
+        },
+        "support_levels": [
+          5.31,
+          5.25,
+          5.16
+        ],
+        "resistance_levels": [
+          5.43
+        ],
+        "weekly_trend": "空头趋势",
+        "indicator_trend": {
+          "kdj_trend": "K线走平，多头减弱",
+          "kdj_cross_days": 0,
+          "kdj_cross_type": "",
+          "macd_hist_trend": "红柱缩短",
+          "macd_hist_days": 0,
+          "rsi_trend": "超买区域，注意回调风险",
+          "volume_price_signal": "缩量下跌，卖盘枯竭"
+        },
+        "weekly_indicators": {
+          "kdj": {
+            "K": 42.7,
+            "D": 32.2,
+            "J": 63.7,
+            "signal": "周线多头"
+          },
+          "macd": {
+            "DIF": -0.225,
+            "DEA": -0.259,
+            "HIST": 0.067,
+            "hist_trend": "红柱放大",
+            "turning_signal": "趋势延续"
+          },
+          "trend": "周线空头趋势"
+        },
+        "rs_strength": {
+          "vs_index": 1.05,
+          "signal": "与大盘同步",
+          "trend": "相对强度上升中"
+        },
+        "divergence": {
+          "macd_divergence": "none",
+          "macd_divergence_type": "",
+          "kdj_divergence": "none",
+          "kdj_divergence_type": ""
+        },
+        "volatility": {
+          "atr": 0.08,
+          "atr_pct": "1.43%",
+          "signal": "低波动"
+        },
+        "consecutive_days": {
+          "up_days": 0,
+          "down_days": 1,
+          "signal": "下跌趋势"
+        }
+      },
+      "weekly_trend": "空头趋势",
+      "strategy_note": "铁路运输，亏损2.5%，关注经济复苏",
+      "position": {
+        "shares": 3800,
+        "cost": 5.479,
+        "current_value": 20292.0,
+        "profit_pct": "-2.54%"
+      },
+      "capital_flow_3d": "-9623.1万",
+      "recent_news": [
+        "举牌概念涨0.50%，主力资金净流入这些股",
+        "大秦铁路：2月大秦线完成货物运输量同比增长1.37%"
+      ]
+    },
+    {
+      "code": "000821.SZ",
+      "name": "海信家电",
+      "asset_type": "Stock",
+      "groups": [
+        "当前持仓",
+        "家电"
+      ],
+      "tags": [
+        "白电",
+        "家电龙头"
+      ],
+      "technical": {
+        "price": 13.79,
+        "change_pct": -1.78,
+        "volume_ratio": 0.72,
+        "trend": "空头排列",
+        "trend_strength": 25,
+        "kdj": {
+          "K": 32.8,
+          "D": 30.7,
+          "J": 37.2,
+          "signal": "中性"
+        },
+        "boll": {
+          "upper": 16.02,
+          "mid": 14.61,
+          "lower": 13.2,
+          "position": "21%",
+          "signal": "收敛变盘前夕"
+        },
+        "macd": {
+          "DIF": -0.029,
+          "DEA": 0.1,
+          "HIST": -0.258,
+          "signal": "绿柱"
+        },
+        "rsi": {
+          "RSI6": 37.1,
+          "RSI12": 37.9,
+          "RSI24": 54.0,
+          "signal": "弱势"
+        },
+        "ma": {
+          "MA5": 13.95,
+          "MA10": 14.07,
+          "MA20": 14.61,
+          "MA60": 13.77
+        },
+        "bias": {
+          "bias_ma5": "-1.16%",
+          "bias_ma10": "-1.98%",
+          "bias_ma20": "-5.63%"
+        },
+        "support_levels": [
+          13.33
+        ],
+        "resistance_levels": [
+          16.59
+        ],
+        "weekly_trend": "空头趋势",
+        "indicator_trend": {
+          "kdj_trend": "K线走平，多头减弱",
+          "kdj_cross_days": 0,
+          "kdj_cross_type": "",
+          "macd_hist_trend": "绿柱放大中",
+          "macd_hist_days": 0,
+          "rsi_trend": "RSI向下，动能减弱",
+          "volume_price_signal": "量价正常"
+        },
+        "weekly_indicators": {
+          "kdj": {
+            "K": 52.9,
+            "D": 54.5,
+            "J": 49.8,
+            "signal": "周线空头"
+          },
+          "macd": {
+            "DIF": 0.524,
+            "DEA": 0.486,
+            "HIST": 0.076,
+            "hist_trend": "红柱缩短",
+            "turning_signal": "红柱缩短，动能减弱"
+          },
+          "trend": "周线空头趋势"
+        },
+        "rs_strength": {
+          "vs_index": 0.89,
+          "signal": "弱于大盘11%",
+          "trend": "相对强度下降中"
+        },
+        "divergence": {
+          "macd_divergence": "none",
+          "macd_divergence_type": "",
+          "kdj_divergence": "底背离",
+          "kdj_divergence_type": "KDJ底背离，超卖区可能反弹"
+        },
+        "volatility": {
+          "atr": 0.66,
+          "atr_pct": "4.80%",
+          "signal": "高波动"
+        },
+        "consecutive_days": {
+          "up_days": 0,
+          "down_days": 2,
+          "signal": "下跌趋势"
+        }
+      },
+      "weekly_trend": "空头趋势",
+      "strategy_note": "家电股，亏损6%，关注消费复苏",
+      "position": {
+        "shares": 400,
+        "cost": 24.125,
+        "current_value": 5516.0,
+        "profit_pct": "-42.84%"
+      },
+      "capital_flow_3d": "-5098.1万",
+      "recent_news": [
+        "000821，突然火了！48家机构调研！公司称对太空光伏进行技术储备",
+        "年报虚假记载 000821“戴帽”"
+      ]
+    },
+    {
+      "code": "600600.SH",
+      "name": "青岛啤酒",
+      "asset_type": "Stock",
+      "groups": [
+        "当前持仓",
+        "消费"
+      ],
+      "tags": [
+        "啤酒龙头",
+        "消费白马"
+      ],
+      "technical": {
+        "price": 63.42,
+        "change_pct": 0.33,
+        "volume_ratio": 1.26,
+        "trend": "多头排列",
+        "trend_strength": 75,
+        "kdj": {
+          "K": 82.8,
+          "D": 71.9,
+          "J": 104.6,
+          "signal": "超买"
+        },
+        "boll": {
+          "upper": 63.6,
+          "mid": 62.34,
+          "lower": 61.08,
+          "position": "93%",
+          "signal": "正常"
+        },
+        "macd": {
+          "DIF": 0.239,
+          "DEA": 0.076,
+          "HIST": 0.325,
+          "signal": "多头增强"
+        },
+        "rsi": {
+          "RSI6": 91.7,
+          "RSI12": 67.5,
+          "RSI24": 67.0,
+          "signal": "超买"
+        },
+        "ma": {
+          "MA5": 62.99,
+          "MA10": 62.43,
+          "MA20": 62.34,
+          "MA60": 62.1
+        },
+        "bias": {
+          "bias_ma5": "0.69%",
+          "bias_ma10": "1.59%",
+          "bias_ma20": "1.73%"
+        },
+        "support_levels": [
+          62.99,
+          62.43,
+          62.34
+        ],
+        "resistance_levels": [
+          63.89
+        ],
+        "weekly_trend": "空头趋势",
+        "indicator_trend": {
+          "kdj_trend": "K线向上，多头排列",
+          "kdj_cross_days": 0,
+          "kdj_cross_type": "",
+          "macd_hist_trend": "红柱放大中",
+          "macd_hist_days": 5,
+          "rsi_trend": "超买区域，注意回调风险",
+          "volume_price_signal": "放量上涨，买盘积极"
+        },
+        "weekly_indicators": {
+          "kdj": {
+            "K": 47.5,
+            "D": 41.7,
+            "J": 59.1,
+            "signal": "周线多头"
+          },
+          "macd": {
+            "DIF": -1.172,
+            "DEA": -1.436,
+            "HIST": 0.528,
+            "hist_trend": "红柱放大",
+            "turning_signal": "趋势延续"
+          },
+          "trend": "周线空头趋势"
+        },
+        "rs_strength": {
+          "vs_index": 1.01,
+          "signal": "与大盘同步",
+          "trend": "相对强度下降中"
+        },
+        "divergence": {
+          "macd_divergence": "none",
+          "macd_divergence_type": "",
+          "kdj_divergence": "底背离",
+          "kdj_divergence_type": "KDJ底背离，超卖区可能反弹"
+        },
+        "volatility": {
+          "atr": 0.89,
+          "atr_pct": "1.40%",
+          "signal": "低波动"
+        },
+        "consecutive_days": {
+          "up_days": 4,
+          "down_days": 0,
+          "signal": "连续上涨4日"
+        }
+      },
+      "weekly_trend": "空头趋势",
+      "strategy_note": "消费白马，亏损6.8%",
+      "position": {
+        "shares": 100,
+        "cost": 68.051,
+        "current_value": 6342.0,
+        "profit_pct": "-6.81%"
+      },
+      "capital_flow_3d": "-1610.1万",
+      "recent_news": [
+        "食品饮料行业今日净流入资金4.54亿元，贵州茅台等5股净流入资金超3000万元",
+        "珠江啤酒去年净利润增超一成至9亿元，全年啤酒销量微增"
+      ]
+    },
+    {
+      "code": "511090.SH",
+      "name": "30年国债",
+      "asset_type": "ETF",
+      "groups": [
+        "当前持仓",
+        "债券"
+      ],
+      "tags": [
+        "国债",
+        "避险"
+      ],
+      "technical": {
+        "price": 113.8133,
+        "change_pct": -0.42,
+        "volume_ratio": 0.0,
+        "trend": "空头排列",
+        "trend_strength": 25,
+        "kdj": {
+          "K": 12.8,
+          "D": 26.2,
+          "J": -14.0,
+          "signal": "超卖"
+        },
+        "boll": {
+          "upper": 116.46,
+          "mid": 115.18,
+          "lower": 113.9,
+          "position": "-3%",
+          "signal": "跌破下轨"
+        },
+        "macd": {
+          "DIF": -0.193,
+          "DEA": 0.01,
+          "HIST": -0.406,
+          "signal": "绿柱"
+        },
+        "rsi": {
+          "RSI6": 11.3,
+          "RSI12": 29.0,
+          "RSI24": 41.7,
+          "signal": "超卖"
+        },
+        "ma": {
+          "MA5": 114.19,
+          "MA10": 114.87,
+          "MA20": 115.18,
+          "MA60": 114.69
+        },
+        "bias": {
+          "bias_ma5": "-0.33%",
+          "bias_ma10": "-0.92%",
+          "bias_ma20": "-1.19%"
+        },
+        "support_levels": [],
+        "resistance_levels": [
+          115.82
+        ],
+        "weekly_trend": "空头趋势",
+        "indicator_trend": {
+          "kdj_trend": "K线向下，空头排列",
+          "kdj_cross_days": 0,
+          "kdj_cross_type": "",
+          "macd_hist_trend": "绿柱放大中",
+          "macd_hist_days": 6,
+          "rsi_trend": "超卖区域，可能反弹",
+          "volume_price_signal": "量价正常"
+        },
+        "weekly_indicators": {
+          "kdj": {
+            "K": 54.0,
+            "D": 54.8,
+            "J": 52.5,
+            "signal": "周线死叉"
+          },
+          "macd": {
+            "DIF": -1.505,
+            "DEA": -1.673,
+            "HIST": 0.337,
+            "hist_trend": "红柱缩短",
+            "turning_signal": "红柱缩短，动能减弱"
+          },
+          "trend": "周线空头趋势"
+        },
+        "rs_strength": {
+          "vs_index": 0.98,
+          "signal": "与大盘同步",
+          "trend": "相对强度下降中"
+        },
+        "divergence": {
+          "macd_divergence": "none",
+          "macd_divergence_type": "",
+          "kdj_divergence": "none",
+          "kdj_divergence_type": ""
+        },
+        "volatility": {
+          "atr": 0.32,
+          "atr_pct": "0.28%",
+          "signal": "低波动"
+        },
+        "consecutive_days": {
+          "up_days": 0,
+          "down_days": 1,
+          "signal": "下跌趋势"
+        }
+      },
+      "weekly_trend": "空头趋势",
+      "strategy_note": "长债ETF，亏损约3%，利率风险",
+      "position": {
+        "shares": 300,
+        "cost": 117.465,
+        "current_value": 34143.99,
+        "profit_pct": "-3.11%"
+      },
+      "recent_news": [
+        "货币政策基调明确强化，30年国债ETF511090午后红盘震荡",
+        "储蓄国债销售火热，市场迎增量资金，30年国债ETF511090盘中成交18.56亿元"
+      ]
+    },
+    {
+      "code": "600809.SH",
+      "name": "山西汾酒",
+      "asset_type": "Stock",
+      "groups": [
+        "当前持仓",
+        "白酒"
+      ],
+      "tags": [
+        "白酒",
+        "次高端"
+      ],
+      "technical": {
+        "price": 159.27,
+        "change_pct": 0.96,
+        "volume_ratio": 0.98,
+        "trend": "空头排列",
+        "trend_strength": 25,
+        "kdj": {
+          "K": 30.5,
+          "D": 25.4,
+          "J": 40.6,
+          "signal": "多头"
+        },
+        "boll": {
+          "upper": 174.51,
+          "mid": 162.78,
+          "lower": 151.05,
+          "position": "35%",
+          "signal": "正常"
+        },
+        "macd": {
+          "DIF": -3.721,
+          "DEA": -3.716,
+          "HIST": -0.01,
+          "signal": "空头"
+        },
+        "rsi": {
+          "RSI6": 65.2,
+          "RSI12": 40.8,
+          "RSI24": 38.8,
+          "signal": "弱势"
+        },
+        "ma": {
+          "MA5": 158.15,
+          "MA10": 158.36,
+          "MA20": 162.78,
+          "MA60": 170.68
+        },
+        "bias": {
+          "bias_ma5": "0.71%",
+          "bias_ma10": "0.57%",
+          "bias_ma20": "-2.15%"
+        },
+        "support_levels": [
+          158.36,
+          158.15,
+          155.11
+        ],
+        "resistance_levels": [
+          181.98
+        ],
+        "weekly_trend": "空头趋势",
+        "indicator_trend": {
+          "kdj_trend": "K线向上，多头排列",
+          "kdj_cross_days": 0,
+          "kdj_cross_type": "",
+          "macd_hist_trend": "绿柱缩短",
+          "macd_hist_days": 0,
+          "rsi_trend": "RSI向上，动能增强",
+          "volume_price_signal": "放量上涨，买盘积极"
+        },
+        "weekly_indicators": {
+          "kdj": {
+            "K": 45.7,
+            "D": 38.8,
+            "J": 59.5,
+            "signal": "周线多头"
+          },
+          "macd": {
+            "DIF": -6.988,
+            "DEA": -5.021,
+            "HIST": -3.935,
+            "hist_trend": "绿柱缩短",
+            "turning_signal": "绿柱缩短，即将拐头"
+          },
+          "trend": "周线空头趋势"
+        },
+        "rs_strength": {
+          "vs_index": 0.91,
+          "signal": "与大盘同步",
+          "trend": "相对强度下降中"
+        },
+        "divergence": {
+          "macd_divergence": "none",
+          "macd_divergence_type": "",
+          "kdj_divergence": "底背离",
+          "kdj_divergence_type": "KDJ底背离，超卖区可能反弹"
+        },
+        "volatility": {
+          "atr": 3.76,
+          "atr_pct": "2.36%",
+          "signal": "中等波动"
+        },
+        "consecutive_days": {
+          "up_days": 2,
+          "down_days": 0,
+          "signal": "上涨趋势"
+        }
+      },
+      "weekly_trend": "空头趋势",
+      "strategy_note": "白酒次高端，亏损10%，关注消费复苏",
+      "position": {
+        "shares": 100,
+        "cost": 178.142,
+        "current_value": 15927.000000000002,
+        "profit_pct": "-10.59%"
+      },
+      "capital_flow_3d": "13482.2万",
+      "recent_news": [
+        "食品饮料行业今日净流入资金4.54亿元，贵州茅台等5股净流入资金超3000万元",
+        "富时中国A50指数季度调整：纳入中国船舶、天孚通信、万华化学"
+      ]
+    },
+    {
+      "code": "002456.SZ",
+      "name": "欧菲光",
+      "asset_type": "Stock",
+      "groups": [
+        "当前持仓",
+        "电子"
+      ],
+      "tags": [
+        "光学",
+        "消费电子"
+      ],
+      "technical": {
+        "price": 9.68,
+        "change_pct": -1.12,
+        "volume_ratio": 0.82,
+        "trend": "弱势多头",
+        "trend_strength": 55,
+        "kdj": {
+          "K": 71.3,
+          "D": 62.3,
+          "J": 89.3,
+          "signal": "多头"
+        },
+        "boll": {
+          "upper": 10.24,
+          "mid": 9.66,
+          "lower": 9.08,
+          "position": "52%",
+          "signal": "正常"
+        },
+        "macd": {
+          "DIF": -0.171,
+          "DEA": -0.228,
+          "HIST": 0.115,
+          "signal": "红柱"
+        },
+        "rsi": {
+          "RSI6": 43.9,
+          "RSI12": 46.1,
+          "RSI24": 49.0,
+          "signal": "弱势"
+        },
+        "ma": {
+          "MA5": 9.62,
+          "MA10": 9.47,
+          "MA20": 9.66,
+          "MA60": 10.27
+        },
+        "bias": {
+          "bias_ma5": "0.67%",
+          "bias_ma10": "2.21%",
+          "bias_ma20": "0.21%"
+        },
+        "support_levels": [
+          9.66,
+          9.62,
+          9.47
+        ],
+        "resistance_levels": [
+          10.04
+        ],
+        "weekly_trend": "空头趋势",
+        "indicator_trend": {
+          "kdj_trend": "K线向上，多头排列",
+          "kdj_cross_days": 0,
+          "kdj_cross_type": "",
+          "macd_hist_trend": "红柱放大中",
+          "macd_hist_days": 5,
+          "rsi_trend": "RSI向下，动能减弱",
+          "volume_price_signal": "缩量下跌，卖盘枯竭"
+        },
+        "weekly_indicators": {
+          "kdj": {
+            "K": 43.0,
+            "D": 34.6,
+            "J": 60.0,
+            "signal": "周线多头"
+          },
+          "macd": {
+            "DIF": -0.606,
+            "DEA": -0.491,
+            "HIST": -0.23,
+            "hist_trend": "绿柱缩短",
+            "turning_signal": "绿柱缩短，即将拐头"
+          },
+          "trend": "周线空头趋势"
+        },
+        "rs_strength": {
+          "vs_index": 0.99,
+          "signal": "与大盘同步",
+          "trend": "相对强度上升中"
+        },
+        "divergence": {
+          "macd_divergence": "底背离",
+          "macd_divergence_type": "股价新低但MACD未创新低，可能反弹",
+          "kdj_divergence": "none",
+          "kdj_divergence_type": ""
+        },
+        "volatility": {
+          "atr": 0.32,
+          "atr_pct": "3.32%",
+          "signal": "高波动"
+        },
+        "consecutive_days": {
+          "up_days": 0,
+          "down_days": 1,
+          "signal": "下跌趋势"
+        }
+      },
+      "weekly_trend": "空头趋势",
+      "strategy_note": "消费电子，亏损16%，关注手机产业链复苏",
+      "position": {
+        "shares": 500,
+        "cost": 11.533,
+        "current_value": 4840.0,
+        "profit_pct": "-16.07%"
+      },
+      "capital_flow_3d": "-2181.7万",
+      "recent_news": [
+        "电子行业资金流出榜：聚飞光电、合力泰等净流出资金居前",
+        "电子行业3月5日资金流向日报"
+      ]
+    },
+    {
+      "code": "000099.SZ",
+      "name": "中信海直",
+      "asset_type": "Stock",
+      "groups": [
+        "当前持仓",
+        "航空"
+      ],
+      "tags": [
+        "通用航空",
+        "低空经济"
+      ],
+      "technical": {
+        "price": 20.2,
+        "change_pct": -0.88,
+        "volume_ratio": 0.48,
+        "trend": "弱势空头",
+        "trend_strength": 40,
+        "kdj": {
+          "K": 36.7,
+          "D": 55.0,
+          "J": 0.2,
+          "signal": "空头"
+        },
+        "boll": {
+          "upper": 21.54,
+          "mid": 20.56,
+          "lower": 19.58,
+          "position": "32%",
+          "signal": "正常"
+        },
+        "macd": {
+          "DIF": 0.064,
+          "DEA": 0.078,
+          "HIST": -0.027,
+          "signal": "死叉"
+        },
+        "rsi": {
+          "RSI6": 35.4,
+          "RSI12": 50.4,
+          "RSI24": 53.1,
+          "signal": "弱势"
+        },
+        "ma": {
+          "MA5": 20.85,
+          "MA10": 20.91,
+          "MA20": 20.56,
+          "MA60": 20.58
+        },
+        "bias": {
+          "bias_ma5": "-3.11%",
+          "bias_ma10": "-3.40%",
+          "bias_ma20": "-1.75%"
+        },
+        "support_levels": [
+          19.75
+        ],
+        "resistance_levels": [
+          21.75
+        ],
+        "weekly_trend": "空头趋势",
+        "indicator_trend": {
+          "kdj_trend": "K线向下，空头排列",
+          "kdj_cross_days": 0,
+          "kdj_cross_type": "",
+          "macd_hist_trend": "绿柱刚出现",
+          "macd_hist_days": 1,
+          "rsi_trend": "RSI向下，动能减弱",
+          "volume_price_signal": "缩量下跌，卖盘枯竭"
+        },
+        "weekly_indicators": {
+          "kdj": {
+            "K": 45.9,
+            "D": 41.6,
+            "J": 54.4,
+            "signal": "周线多头"
+          },
+          "macd": {
+            "DIF": -0.39,
+            "DEA": -0.439,
+            "HIST": 0.098,
+            "hist_trend": "红柱缩短",
+            "turning_signal": "红柱缩短，动能减弱"
+          },
+          "trend": "周线空头趋势"
+        },
+        "rs_strength": {
+          "vs_index": 1.02,
+          "signal": "与大盘同步",
+          "trend": "相对强度上升中"
+        },
+        "divergence": {
+          "macd_divergence": "none",
+          "macd_divergence_type": "",
+          "kdj_divergence": "none",
+          "kdj_divergence_type": ""
+        },
+        "volatility": {
+          "atr": 0.59,
+          "atr_pct": "2.95%",
+          "signal": "中等波动"
+        },
+        "consecutive_days": {
+          "up_days": 0,
+          "down_days": 4,
+          "signal": "连续下跌4日"
+        }
+      },
+      "weekly_trend": "空头趋势",
+      "strategy_note": "低空经济概念，亏损17%，关注政策",
+      "position": {
+        "shares": 400,
+        "cost": 24.397,
+        "current_value": 8080.0,
+        "profit_pct": "-17.20%"
+      },
+      "capital_flow_3d": "-18210.1万",
+      "recent_news": [
+        "注册资本1亿元！瞄准低空经济，中信海直、中无人机等在川成立新公司",
+        "25.26亿元主力资金今日撤离交通运输板块"
+      ]
+    },
+    {
+      "code": "601127.SH",
+      "name": "赛力斯",
+      "asset_type": "Stock",
+      "groups": [
+        "当前持仓",
+        "新能源"
+      ],
+      "tags": [
+        "新能源汽车",
+        "华为概念"
+      ],
+      "technical": {
+        "price": 100.23,
+        "change_pct": 0.35,
+        "volume_ratio": 0.76,
+        "trend": "强势空头",
+        "trend_strength": 10,
+        "kdj": {
+          "K": 32.6,
+          "D": 26.7,
+          "J": 44.2,
+          "signal": "多头"
+        },
+        "boll": {
+          "upper": 113.92,
+          "mid": 104.99,
+          "lower": 96.06,
+          "position": "23%",
+          "signal": "正常"
+        },
+        "macd": {
+          "DIF": -3.752,
+          "DEA": -3.709,
+          "HIST": -0.086,
+          "signal": "空头"
+        },
+        "rsi": {
+          "RSI6": 45.7,
+          "RSI12": 27.2,
+          "RSI24": 44.3,
+          "signal": "弱势"
+        },
+        "ma": {
+          "MA5": 99.79,
+          "MA10": 101.03,
+          "MA20": 104.99,
+          "MA60": 114.07
+        },
+        "bias": {
+          "bias_ma5": "0.44%",
+          "bias_ma10": "-0.79%",
+          "bias_ma20": "-4.54%"
+        },
+        "support_levels": [
+          99.79,
+          96.12
+        ],
+        "resistance_levels": [
+          113.45
+        ],
+        "weekly_trend": "空头趋势",
+        "indicator_trend": {
+          "kdj_trend": "K线向上，多头排列",
+          "kdj_cross_days": 0,
+          "kdj_cross_type": "",
+          "macd_hist_trend": "绿柱缩短",
+          "macd_hist_days": 0,
+          "rsi_trend": "RSI向上，动能增强",
+          "volume_price_signal": "量价正常"
+        },
+        "weekly_indicators": {
+          "kdj": {
+            "K": 43.2,
+            "D": 33.8,
+            "J": 61.9,
+            "signal": "周线多头"
+          },
+          "macd": {
+            "DIF": -9.185,
+            "DEA": -6.925,
+            "HIST": -4.519,
+            "hist_trend": "绿柱缩短",
+            "turning_signal": "绿柱缩短，即将拐头"
+          },
+          "trend": "周线空头趋势"
+        },
+        "rs_strength": {
+          "vs_index": 0.92,
+          "signal": "与大盘同步",
+          "trend": "相对强度上升中"
+        },
+        "divergence": {
+          "macd_divergence": "none",
+          "macd_divergence_type": "",
+          "kdj_divergence": "底背离",
+          "kdj_divergence_type": "KDJ底背离，超卖区可能反弹"
+        },
+        "volatility": {
+          "atr": 2.96,
+          "atr_pct": "2.96%",
+          "signal": "中等波动"
+        },
+        "consecutive_days": {
+          "up_days": 1,
+          "down_days": 0,
+          "signal": "上涨趋势"
+        }
+      },
+      "weekly_trend": "空头趋势",
+      "strategy_note": "华为汽车概念，亏损21%，关注问界销量",
+      "position": {
+        "shares": 100,
+        "cost": 128.401,
+        "current_value": 10023.0,
+        "profit_pct": "-21.94%"
+      },
+      "capital_flow_3d": "5687.4万",
+      "recent_news": [
+        "赛力斯：目前问界M6已经开启预热",
+        "赛力斯：公司2025年年度报告的预约时间为2026年3月31日"
+      ]
+    },
+    {
+      "code": "600361.SH",
+      "name": "创新新材",
+      "asset_type": "Stock",
+      "groups": [
+        "当前持仓",
+        "材料"
+      ],
+      "tags": [
+        "新材料"
+      ],
+      "technical": {
+        "price": 4.84,
+        "change_pct": -1.63,
+        "volume_ratio": 0.91,
+        "trend": "多头排列",
+        "trend_strength": 75,
+        "kdj": {
+          "K": 67.5,
+          "D": 69.1,
+          "J": 64.2,
+          "signal": "死叉"
+        },
+        "boll": {
+          "upper": 5.0,
+          "mid": 4.68,
+          "lower": 4.36,
+          "position": "75%",
+          "signal": "正常"
+        },
+        "macd": {
+          "DIF": 0.078,
+          "DEA": 0.058,
+          "HIST": 0.04,
+          "signal": "多头"
+        },
+        "rsi": {
+          "RSI6": 59.4,
+          "RSI12": 58.8,
+          "RSI24": 52.3,
+          "signal": "强势"
+        },
+        "ma": {
+          "MA5": 4.87,
+          "MA10": 4.8,
+          "MA20": 4.68,
+          "MA60": 4.55
+        },
+        "bias": {
+          "bias_ma5": "-0.66%",
+          "bias_ma10": "0.83%",
+          "bias_ma20": "3.40%"
+        },
+        "support_levels": [
+          4.8,
+          4.68,
+          4.33
+        ],
+        "resistance_levels": [
+          5.04
+        ],
+        "weekly_trend": "空头趋势",
+        "indicator_trend": {
+          "kdj_trend": "K线向下，空头排列",
+          "kdj_cross_days": 1,
+          "kdj_cross_type": "死叉",
+          "macd_hist_trend": "红柱缩短",
+          "macd_hist_days": 0,
+          "rsi_trend": "RSI向下，动能减弱",
+          "volume_price_signal": "量价正常"
+        },
+        "weekly_indicators": {
+          "kdj": {
+            "K": 48.8,
+            "D": 48.4,
+            "J": 49.5,
+            "signal": "周线金叉"
+          },
+          "macd": {
+            "DIF": 0.125,
+            "DEA": 0.097,
+            "HIST": 0.057,
+            "hist_trend": "红柱放大",
+            "turning_signal": "趋势延续"
+          },
+          "trend": "周线空头趋势"
+        },
+        "rs_strength": {
+          "vs_index": 1.09,
+          "signal": "与大盘同步",
+          "trend": "相对强度上升中"
+        },
+        "divergence": {
+          "macd_divergence": "none",
+          "macd_divergence_type": "",
+          "kdj_divergence": "none",
+          "kdj_divergence_type": ""
+        },
+        "volatility": {
+          "atr": 0.19,
+          "atr_pct": "3.98%",
+          "signal": "高波动"
+        },
+        "consecutive_days": {
+          "up_days": 0,
+          "down_days": 1,
+          "signal": "下跌趋势"
+        }
+      },
+      "weekly_trend": "空头趋势",
+      "strategy_note": "新材料，亏损30%，深套中",
+      "position": {
+        "shares": 1100,
+        "cost": 6.969,
+        "current_value": 5324.0,
+        "profit_pct": "-30.55%"
+      },
+      "capital_flow_3d": "-4186.0万",
+      "recent_news": [
+        "59.95亿元资金今日流出有色金属股",
+        "80.00亿元资金今日流出有色金属股"
+      ]
+    }
+  ],
+  "watchlist": []
+}
+
+# 指标解读指南
+
+## 指标趋势描述 (indicator_trend)
+- `kdj_trend`: KDJ 三线方向描述，如"K线向上，多头排列"
+- `kdj_cross_days`: 金叉/死叉发生天数，1表示刚发生
+- `kdj_cross_type`: "金叉"或"死叉"或空
+- `macd_hist_trend`: MACD柱子变化趋势，如"红柱放大中"、"绿柱缩短"
+- `macd_hist_days`: 红绿柱持续天数
+- `rsi_trend`: RSI方向和超买超卖状态
+- `volume_price_signal`: 量价配合描述，如"放量上涨，买盘积极"
+
+## 周线指标 (weekly_indicators)
+- 周线KDJ和MACD信号，用于确认日线趋势
+- `macd_turning_signal`: 周线MACD拐头信号，如"绿柱缩短，即将拐头"、"二次翻绿，底部信号"
+
+## 相对强弱 (rs_strength)
+- `vs_index`: 相对大盘的强度，>1.1 表示强于大盘
+- `signal`: 如"强于大盘5%"
+- `trend`: 相对强度变化趋势
+
+## 背离检测 (divergence)
+- `macd_divergence`: "顶背离"或"底背离"或"none"
+- 顶背离：股价新高但指标未创新高，注意回调风险
+- 底背离：股价新低但指标未创新低，可能反弹
+
+## 波动率 (volatility)
+- `atr_pct`: ATR占股价百分比
+- `signal`: "高波动"(>3%)、"中等波动"(2-3%)、"低波动"(<2%)
+
+## 连涨连跌 (consecutive_days)
+- 连续上涨/下跌天数统计
+- 连续5日以上注意反转可能
+
+# 指令
+1. **市场大盘分析**：根据 `market_context` 中的指数情况，简要评估当前市场情绪（多头/空头/震荡）。
+
+2. **持仓诊断 (Portfolio)**：
+    - 针对 `portfolio` 中的标的，结合技术信号 (KDJ, BOLL, MACD) 和用户的 `strategy_note`，给出【持有】、【加仓】或【减仓/卖出】的建议。
+    - 特别关注 `profit_pct` (盈亏比例) 和用户的止损线设定。
+    - **重点参考 `indicator_trend` 中的趋势描述**，判断金叉死叉时机。
+    - **参考 `weekly_indicators` 确认周线级别趋势**，日线与周线共振更可靠。
+    - **关注 `divergence` 背离信号**，顶背离提示风险，底背离提示机会。
+    - **参考 `rs_strength` 判断个股强弱**，强于大盘的标的优先关注。
+
+3. **机会发掘 (Watchlist)**：
+    - 检查 `watchlist` 中的标的，寻找买入信号（如 KDJ 金叉, BOLL 支撑位反弹, MACD 翻红）。
+    - 如果满足条件，建议具体的买入价格区间。
+    - **优先推荐 `rs_strength.vs_index > 1.1` 且无顶背离的标的**。
+    - **关注 `consecutive_days` 连续下跌后的反弹机会**。
+
+4. **约束条件**：
+    - 观点要明确果断。
+    - 尽可能提到具体的价格点位。
+    - 如果某个标的信号恶劣（例如：死叉 + 空头趋势 + 顶背离），明确建议规避。
+    - 如果 `capital_flow_3d` (3日主力资金) 为大幅负值，请在买入建议中提示风险。
+    - 如果 `volatility.signal` 为"高波动"，提示风险并建议缩小仓位。
+
+# 输出格式
+请使用清晰的 Markdown 格式输出分析报告。

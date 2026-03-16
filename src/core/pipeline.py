@@ -161,7 +161,13 @@ class StockAnalysisPipeline:
             logger.error(f"{stock_name}({code}) {error_msg}")
             return False, error_msg
     
-    def analyze_stock(self, code: str, report_type: ReportType, query_id: str) -> Optional[AnalysisResult]:
+    def analyze_stock(
+        self, 
+        code: str, 
+        report_type: ReportType, 
+        query_id: str,
+        save_prompt: bool = False
+    ) -> Optional[AnalysisResult]:
         """
         分析单只股票（增强版：含量比、换手率、筹码分析、多维度情报）
         
@@ -169,7 +175,7 @@ class StockAnalysisPipeline:
         1. 获取实时行情（量比、换手率）- 通过 DataFetcherManager 自动故障切换
         2. 获取筹码分布 - 通过 DataFetcherManager 带熔断保护
         3. 进行趋势分析（基于交易理念）
-        4. 多维度情报搜索（最新消息+风险排查+业绩预期）
+        4. 多维度情报搜索（最新消息 + 风险排查 + 业绩预期）
         5. 从数据库获取分析上下文
         6. 调用 AI 进行综合分析
         
@@ -177,6 +183,7 @@ class StockAnalysisPipeline:
             query_id: 查询链路关联 id
             code: 股票代码
             report_type: 报告类型
+            save_prompt: 是否保存 prompt 到文件（用于 dry-run 模式）
             
         Returns:
             AnalysisResult 或 None（如果分析失败）
@@ -352,7 +359,11 @@ class StockAnalysisPipeline:
             )
             
             # Step 7: 调用 AI 分析（传入增强的上下文和新闻）
-            result = self.analyzer.analyze(enhanced_context, news_context=news_context)
+            result = self.analyzer.analyze(
+                enhanced_context, 
+                news_context=news_context,
+                save_prompt=save_prompt
+            )
 
             # Step 7.5: 填充分析时的价格信息到 result
             if result:
@@ -952,6 +963,134 @@ class StockAnalysisPipeline:
 
         return context
     
+    def prepare_stock_context(
+        self,
+        code: str,
+        report_type: ReportType = ReportType.SIMPLE,
+        analysis_query_id: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        准备单只股票的分析上下文（用于批量分析）
+
+        包括：
+        1. 获取并保存数据
+        2. 收集分析所需的所有上下文信息
+        3. 返回上下文数据供批量分析使用
+
+        Args:
+            code: 股票代码
+            report_type: 报告类型枚举
+            analysis_query_id: 查询链路关联 id
+
+        Returns:
+            包含上下文信息的字典，或 None（如果失败）
+        """
+        logger.info(f"========== 准备 {code} 上下文数据 ==========")
+        
+        try:
+            # Step 1: 获取并保存数据
+            success, error = self.fetch_and_save_stock_data(code)
+            
+            if not success:
+                logger.warning(f"[{code}] 数据获取失败：{error}")
+            
+            # Step 2: 获取股票名称
+            stock_name = self.fetcher_manager.get_stock_name(code)
+            
+            # Step 3: 获取实时行情
+            realtime_quote = None
+            try:
+                realtime_quote = self.fetcher_manager.get_realtime_quote(code)
+                if realtime_quote:
+                    if realtime_quote.name:
+                        stock_name = realtime_quote.name
+                    volume_ratio = getattr(realtime_quote, 'volume_ratio', None)
+                    turnover_rate = getattr(realtime_quote, 'turnover_rate', None)
+                    logger.info(f"{stock_name}({code}) 实时行情：价格={realtime_quote.price}, "
+                              f"量比={volume_ratio}, 换手率={turnover_rate}%")
+            except Exception as e:
+                logger.warning(f"{stock_name}({code}) 获取实时行情失败：{e}")
+            
+            if not stock_name:
+                stock_name = f'股票{code}'
+            
+            # Step 4: 获取筹码分布
+            chip_data = None
+            try:
+                chip_data = self.fetcher_manager.get_chip_distribution(code)
+                if chip_data:
+                    logger.info(f"{stock_name}({code}) 筹码分布：获利比例={chip_data.profit_ratio:.1%}")
+            except Exception as e:
+                logger.warning(f"{stock_name}({code}) 获取筹码分布失败：{e}")
+            
+            # Step 5: 趋势分析
+            trend_result = None
+            try:
+                end_date = date.today()
+                start_date = end_date - timedelta(days=89)
+                historical_bars = self.db.get_data_range(code, start_date, end_date)
+                if historical_bars:
+                    df = pd.DataFrame([bar.to_dict() for bar in historical_bars])
+                    if self.config.enable_realtime_quote and realtime_quote:
+                        df = self._augment_historical_with_realtime(df, realtime_quote, code)
+                    trend_result = self.trend_analyzer.analyze(df, code)
+                    logger.info(f"{stock_name}({code}) 趋势分析：{trend_result.trend_status.value}")
+            except Exception as e:
+                logger.warning(f"{stock_name}({code}) 趋势分析失败：{e}")
+            
+            # Step 6: 多维度情报搜索
+            news_context = None
+            if self.search_service.is_available:
+                logger.info(f"{stock_name}({code}) 开始多维度情报搜索...")
+                intel_results = self.search_service.search_comprehensive_intel(
+                    stock_code=code,
+                    stock_name=stock_name,
+                    max_searches=5
+                )
+                if intel_results:
+                    news_context = self.search_service.format_intel_report(intel_results, stock_name)
+                    logger.info(f"{stock_name}({code}) 情报搜索完成")
+            else:
+                logger.info(f"{stock_name}({code}) 搜索服务不可用")
+            
+            # Step 7: 获取分析上下文
+            context = self.db.get_analysis_context(code)
+            if context is None:
+                logger.warning(f"{stock_name}({code}) 无法获取历史行情数据")
+                context = {
+                    'code': code,
+                    'stock_name': stock_name,
+                    'date': date.today().isoformat(),
+                    'data_missing': True,
+                    'today': {},
+                    'yesterday': {}
+                }
+            
+            # Step 8: 增强上下文数据
+            enhanced_context = self._enhance_context(
+                context, 
+                realtime_quote, 
+                chip_data, 
+                trend_result,
+                stock_name
+            )
+            
+            # Step 9: 构建返回的上下文数据
+            query_id = analysis_query_id or self.query_id or uuid.uuid4().hex
+            return {
+                'context': enhanced_context,
+                'news_context': news_context,
+                'code': code,
+                'name': stock_name,
+                'query_id': query_id,
+                'report_type': report_type
+            }
+            
+        except Exception as e:
+            logger.error(f"{code} 准备上下文失败：{e}")
+            logger.exception(f"{code} 详细错误信息:")
+            return None
+    
     def process_single_stock(
         self,
         code: str,
@@ -959,6 +1098,7 @@ class StockAnalysisPipeline:
         single_stock_notify: bool = False,
         report_type: ReportType = ReportType.SIMPLE,
         analysis_query_id: Optional[str] = None,
+        save_prompt: bool = False,
     ) -> Optional[AnalysisResult]:
         """
         处理单只股票的完整流程
@@ -977,6 +1117,7 @@ class StockAnalysisPipeline:
             skip_analysis: 是否跳过 AI 分析
             single_stock_notify: 是否启用单股推送模式（每分析完一只立即推送）
             report_type: 报告类型枚举（从配置读取，Issue #119）
+            save_prompt: 是否保存 prompt 到文件（用于 dry-run 模式）
 
         Returns:
             AnalysisResult 或 None
@@ -993,11 +1134,26 @@ class StockAnalysisPipeline:
             
             # Step 2: AI 分析
             if skip_analysis:
-                logger.info(f"[{code}] 跳过 AI 分析（dry-run 模式）")
+                # dry-run 模式：仍然生成并保存 prompt，但不调用 AI
+                logger.info(f"[{code}] 开始生成 Prompt（dry-run 模式）")
+                effective_query_id = analysis_query_id or self.query_id or uuid.uuid4().hex
+                # 调用 analyze_stock 但传入 save_prompt=True 来保存 prompt
+                self.analyze_stock(
+                    code, 
+                    report_type, 
+                    query_id=effective_query_id,
+                    save_prompt=True  # dry-run 模式下保存 prompt
+                )
+                logger.info(f"[{code}] Prompt 已保存，跳过 AI 调用")
                 return None
             
             effective_query_id = analysis_query_id or self.query_id or uuid.uuid4().hex
-            result = self.analyze_stock(code, report_type, query_id=effective_query_id)
+            result = self.analyze_stock(
+                code, 
+                report_type, 
+                query_id=effective_query_id,
+                save_prompt=False
+            )
             
             if result:
                 if not result.success:
@@ -1108,41 +1264,80 @@ class StockAnalysisPipeline:
         
         results: List[AnalysisResult] = []
         
-        # 使用线程池并发处理
-        # 注意：max_workers 设置较低（默认3）以避免触发反爬
+        # ========== 批量分析模式 ==========
+        # 新架构：所有股票聚合到一个 prompt，统一调用 AI
+        # 优势：
+        # 1. 多个股票信息保存在一个 prompt 文件中
+        # 2. 一次 API 调用获得所有股票的分析结果
+        # 3. AI 可以综合考虑多只股票的情况，给出更协调的建议
+        logger.info(f"批量分析模式：准备 {len(stock_codes)} 只股票的上下文数据...")
+        
+        batch_contexts = []
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            # 提交任务
+            # 并发准备所有股票的上下文数据
             future_to_code = {
                 executor.submit(
-                    self.process_single_stock,
+                    self.prepare_stock_context,
                     code,
-                    skip_analysis=dry_run,
-                    single_stock_notify=single_stock_notify and send_notification,
-                    report_type=report_type,  # Issue #119: 传递报告类型
-                    analysis_query_id=uuid.uuid4().hex,
+                    report_type=report_type,
+                    analysis_query_id=uuid.uuid4().hex
                 ): code
                 for code in stock_codes
             }
             
-            # 收集结果
-            for idx, future in enumerate(as_completed(future_to_code)):
+            # 收集上下文
+            for future in as_completed(future_to_code):
                 code = future_to_code[future]
                 try:
-                    result = future.result()
-                    if result:
-                        results.append(result)
-
-                    # Issue #128: 分析间隔 - 在个股分析和大盘分析之间添加延迟
-                    if idx < len(stock_codes) - 1 and analysis_delay > 0:
-                        # 注意：此 sleep 发生在“主线程收集 future 的循环”中，
-                        # 并不会阻止线程池中的任务同时发起网络请求。
-                        # 因此它对降低并发请求峰值的效果有限；真正的峰值主要由 max_workers 决定。
-                        # 该行为目前保留（按需求不改逻辑）。
-                        logger.debug(f"等待 {analysis_delay} 秒后继续下一只股票...")
-                        time.sleep(analysis_delay)
-
+                    context_data = future.result()
+                    if context_data:
+                        batch_contexts.append(context_data)
+                        logger.info(f"[{code}] 上下文准备完成")
+                    else:
+                        logger.warning(f"[{code}] 上下文准备失败")
                 except Exception as e:
-                    logger.error(f"[{code}] 任务执行失败: {e}")
+                    logger.error(f"[{code}] 准备上下文失败：{e}")
+        
+        logger.info(f"上下文准备完成，共 {len(batch_contexts)} 只股票")
+        
+        # 批量 AI 分析（或 dry-run 保存 prompt）
+        if batch_contexts:
+            logger.info(f"开始批量 AI 分析，共 {len(batch_contexts)} 只股票...")
+            
+            # 调用批量分析方法
+            batch_results = self.analyzer.analyze_batch(
+                batch_contexts,
+                save_prompt=dry_run,
+                batch_mode=True  # 所有股票合并到一个 prompt 文件
+            )
+            
+            # 处理批量分析结果
+            if batch_results:
+                results.extend(batch_results)
+                
+                # 保存分析历史
+                for idx, result in enumerate(batch_results):
+                    if idx < len(batch_contexts):
+                        context_data = batch_contexts[idx]
+                        query_id = context_data.get('query_id', uuid.uuid4().hex)
+                        
+                        try:
+                            context_snapshot = self._build_context_snapshot(
+                                enhanced_context=context_data.get('context', {}),
+                                news_content=context_data.get('news_context'),
+                                realtime_quote=None,
+                                chip_data=None
+                            )
+                            self.db.save_analysis_history(
+                                result=result,
+                                query_id=query_id,
+                                report_type=report_type.value,
+                                news_content=context_data.get('news_context'),
+                                context_snapshot=context_snapshot,
+                                save_snapshot=self.save_context_snapshot
+                            )
+                        except Exception as e:
+                            logger.warning(f"[{result.code}] 保存分析历史失败：{e}")
         
         # 统计
         elapsed_time = time.time() - start_time
@@ -1379,18 +1574,313 @@ class StockAnalysisPipeline:
                 logger.info("通知渠道未配置，跳过推送")
                 
         except Exception as e:
-            import traceback
-            logger.error(f"发送通知失败: {e}\n{traceback.format_exc()}")
+            logger.error(f"发送通知失败: {e}")
 
-    def _generate_aggregate_report(
+    def run_stockpilot(
         self,
-        results: List[AnalysisResult],
-        report_type: ReportType,
-    ) -> str:
-        """Generate aggregate report with backward-compatible notifier fallback."""
-        generator = getattr(self.notifier, "generate_aggregate_report", None)
-        if callable(generator):
-            return generator(results, report_type)
-        if report_type == ReportType.BRIEF and hasattr(self.notifier, "generate_brief_report"):
-            return self.notifier.generate_brief_report(results)
-        return self.notifier.generate_dashboard_report(results)
+        send_notification: bool = True,
+        save_prompt: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Run StockPilot mode: Personal investment analysis with user profile
+
+        Design Philosophy:
+        - Algorithmic rigor belongs to scripts: MA, MACD, divergence, support levels
+        - Fuzzy reasoning belongs to AI: portfolio context, news sentiment, market trends
+        - Scripts handle certainty (calculation, statistics, feature extraction)
+        - AI handles uncertainty (strategy combination, position sizing, style matching)
+
+        This method:
+        1. Loads user profile from stockpilot_config.yaml
+        2. Fetches market indices data using existing DataFetcherManager (with failover)
+        3. Analyzes securities in pool using multi-threading
+        4. Compresses technical indicators into AI-readable summaries
+        5. Generates personalized prompt for AI
+
+        Args:
+            send_notification: Whether to send notification
+            save_prompt: Whether to save prompt to file (for dry-run mode)
+
+        Returns:
+            Dict containing all analysis data for AI prompt
+        """
+        from pathlib import Path
+        from datetime import datetime
+
+        from src.core.stockpilot_config import get_stockpilot_config
+        from src.core.stockpilot_indicators import DataCompressor, TechnicalSummary
+        from src.core.stockpilot_engine import MarketTimer, NpEncoder
+
+        start_time = time.time()
+
+        config = get_stockpilot_config()
+        active_profile = config.get_active_profile()
+
+        if not active_profile:
+            logger.error("No active user profile found in stockpilot_config.yaml")
+            return {}
+
+        timer = MarketTimer()
+        logger.info(f"StockPilot mode starting... [{timer.today_str}]")
+        logger.info(f"Active profile: {active_profile.profile_name}")
+        logger.info(f"Securities in pool: {len(active_profile.security_pool)}")
+
+        holdings = []
+        watchlist = []
+
+        scope = active_profile.data_fetch_config.consult_scope
+        fetch_flow = active_profile.data_fetch_config.fetch_main_money_flow
+        fetch_news = active_profile.data_fetch_config.fetch_news_sentiment
+
+        securities_to_analyze = [
+            sec for sec in active_profile.security_pool
+            if any(grp in scope for grp in sec.groups)
+        ]
+
+        logger.info(f"Securities to analyze: {len(securities_to_analyze)}")
+
+        def analyze_security(sec):
+            try:
+                code = "".join(filter(str.isdigit, sec.code))
+                stock_name = sec.name
+
+                df, _ = self.fetcher_manager.get_daily_data(code, days=120)
+
+                if df is None or df.empty:
+                    logger.warning(f"{stock_name}({code}): Failed to get data")
+                    return None
+
+                compressor = DataCompressor(df)
+                tech_summary = compressor.get_summary()
+
+                result = {
+                    "code": sec.code,
+                    "name": stock_name,
+                    "asset_type": sec.asset_type,
+                    "groups": sec.groups,
+                    "tags": sec.tags,
+                    "technical": tech_summary.to_dict(),
+                    "weekly_trend": compressor.get_weekly_trend(),
+                    "strategy_note": sec.strategy_note,
+                }
+
+                if sec.is_holding and sec.position:
+                    cost = sec.position.cost
+                    curr = tech_summary.price
+                    profit_pct = (curr - cost) / cost * 100 if cost > 0 else 0
+
+                    result["position"] = {
+                        "shares": sec.position.shares,
+                        "cost": cost,
+                        "current_value": curr * sec.position.shares,
+                        "profit_pct": f"{profit_pct:.2f}%",
+                    }
+
+                if fetch_flow and sec.asset_type == "Stock":
+                    try:
+                        import akshare as ak
+                        market = "sh" if "SH" in sec.code else "sz"
+                        flow_df = ak.stock_individual_fund_flow(stock=code, market=market)
+                        if flow_df is not None and not flow_df.empty:
+                            net_inflow = flow_df.tail(3)["主力净流入-净额"].sum()
+                            result["capital_flow_3d"] = f"{net_inflow / 10000:.1f}万"
+                    except Exception as e:
+                        logger.debug(f"{stock_name}({code}): Failed to get capital flow: {e}")
+
+                if fetch_news:
+                    try:
+                        import akshare as ak
+                        news_df = ak.stock_news_em(symbol=code)
+                        if news_df is not None and not news_df.empty:
+                            result["recent_news"] = news_df.head(2)["新闻标题"].tolist()
+                    except Exception as e:
+                        logger.debug(f"{stock_name}({code}): Failed to get news: {e}")
+
+                return (sec, result)
+
+            except Exception as e:
+                logger.warning(f"{sec.name}({sec.code}): Analysis failed: {e}")
+                return None
+
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            futures = {
+                executor.submit(analyze_security, sec): sec
+                for sec in securities_to_analyze
+            }
+
+            for future in as_completed(futures):
+                result = future.result()
+                if result:
+                    sec, data = result
+                    if "当前持仓" in sec.groups:
+                        holdings.append(data)
+                    else:
+                        watchlist.append(data)
+
+        market_summaries = []
+        for idx_config in config.global_config.indices:
+            if not idx_config.enabled:
+                continue
+
+            try:
+                clean_code = idx_config.code.lower().replace(".", "")
+                if clean_code.endswith("sh"):
+                    clean_code = "sh" + clean_code[:-2]
+                elif clean_code.endswith("sz"):
+                    clean_code = "sz" + clean_code[:-2]
+
+                df, _ = self.fetcher_manager.get_daily_data(clean_code, days=60)
+
+                if df is not None and not df.empty:
+                    compressor = DataCompressor(df)
+                    tech_summary = compressor.get_summary()
+
+                    market_summaries.append({
+                        "name": idx_config.name,
+                        "code": idx_config.code,
+                        "price": tech_summary.price,
+                        "change_pct": tech_summary.change_pct,
+                        "trend": tech_summary.trend,
+                        "technical": {
+                            "kdj_signal": tech_summary.kdj_signal,
+                            "boll_signal": tech_summary.boll_signal,
+                            "macd_signal": tech_summary.macd_signal,
+                        },
+                    })
+            except Exception as e:
+                logger.warning(f"Failed to analyze {idx_config.name}: {e}")
+
+        prompt_payload = {
+            "user_profile": {
+                "name": active_profile.profile_name,
+                "style": active_profile.get_active_styles(),
+                "preferences": active_profile.get_active_preferences(),
+                "cash": (
+                    active_profile.assets.available_cash
+                    if active_profile.assets.include_cash_in_prompt
+                    else "Hidden"
+                ),
+                "total_capital": (
+                    active_profile.assets.total_capital
+                    if active_profile.assets.include_cash_in_prompt
+                    else "Hidden"
+                ),
+            },
+            "market_context": {
+                "stage": timer.get_market_stage().to_dict(),
+                "indices": {s["name"]: s for s in market_summaries},
+            },
+            "portfolio": holdings,
+            "watchlist": watchlist,
+        }
+
+        elapsed_time = time.time() - start_time
+        logger.info(f"StockPilot analysis completed: {len(holdings)} holdings, {len(watchlist)} watchlist, {elapsed_time:.2f}s")
+
+        if save_prompt:
+            prompts_dir = Path("prompts")
+            prompts_dir.mkdir(exist_ok=True)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = prompts_dir / f"{timestamp}_stockpilot_analysis.txt"
+
+            prompt = self._generate_stockpilot_prompt(prompt_payload)
+
+            with open(output_path, "w", encoding="utf-8") as f:
+                f.write(f"# StockPilot 智能投研分析\n")
+                f.write(f"生成时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write("=" * 80 + "\n\n")
+                f.write(prompt)
+
+            logger.info(f"[Dry-Run] StockPilot Prompt saved to: {output_path}")
+
+        return prompt_payload
+
+    def _generate_stockpilot_prompt(self, payload: Dict[str, Any]) -> str:
+        """Generate AI prompt from StockPilot analysis payload"""
+        import json
+        from src.core.stockpilot_engine import NpEncoder
+
+        json_str = json.dumps(payload, ensure_ascii=False, indent=2, cls=NpEncoder)
+
+        user_styles = payload.get("user_profile", {}).get("style", [])
+        user_prefs = payload.get("user_profile", {}).get("preferences", [])
+
+        style_text = "\n".join([f"  - {s}" for s in user_styles]) if user_styles else "  - 无特别设定"
+        pref_text = "\n".join([f"  - {p}" for p in user_prefs]) if user_prefs else "  - 无特别要求"
+
+        prompt = f"""# 角色：StockPilot 智能投研专家
+
+# 任务
+你是一位专业的投资顾问。请分析以下包含市场环境、持仓状态和自选股技术指标的 JSON 数据，并给出操作建议。
+
+# 用户画像
+## 投资风格
+{style_text}
+
+## 回答偏好
+{pref_text}
+
+# 数据 (JSON)
+{json_str}
+
+# 指标解读指南
+
+## 指标趋势描述 (indicator_trend)
+- `kdj_trend`: KDJ 三线方向描述，如"K线向上，多头排列"
+- `kdj_cross_days`: 金叉/死叉发生天数，1表示刚发生
+- `kdj_cross_type`: "金叉"或"死叉"或空
+- `macd_hist_trend`: MACD柱子变化趋势，如"红柱放大中"、"绿柱缩短"
+- `macd_hist_days`: 红绿柱持续天数
+- `rsi_trend`: RSI方向和超买超卖状态
+- `volume_price_signal`: 量价配合描述，如"放量上涨，买盘积极"
+
+## 周线指标 (weekly_indicators)
+- 周线KDJ和MACD信号，用于确认日线趋势
+- `macd_turning_signal`: 周线MACD拐头信号，如"绿柱缩短，即将拐头"、"二次翻绿，底部信号"
+
+## 相对强弱 (rs_strength)
+- `vs_index`: 相对大盘的强度，>1.1 表示强于大盘
+- `signal`: 如"强于大盘5%"
+- `trend`: 相对强度变化趋势
+
+## 背离检测 (divergence)
+- `macd_divergence`: "顶背离"或"底背离"或"none"
+- 顶背离：股价新高但指标未创新高，注意回调风险
+- 底背离：股价新低但指标未创新低，可能反弹
+
+## 波动率 (volatility)
+- `atr_pct`: ATR占股价百分比
+- `signal`: "高波动"(>3%)、"中等波动"(2-3%)、"低波动"(<2%)
+
+## 连涨连跌 (consecutive_days)
+- 连续上涨/下跌天数统计
+- 连续5日以上注意反转可能
+
+# 指令
+1. **市场大盘分析**：根据 `market_context` 中的指数情况，简要评估当前市场情绪（多头/空头/震荡）。
+
+2. **持仓诊断 (Portfolio)**：
+    - 针对 `portfolio` 中的标的，结合技术信号 (KDJ, BOLL, MACD) 和用户的 `strategy_note`，给出【持有】、【加仓】或【减仓/卖出】的建议。
+    - 特别关注 `profit_pct` (盈亏比例) 和用户的止损线设定。
+    - **重点参考 `indicator_trend` 中的趋势描述**，判断金叉死叉时机。
+    - **参考 `weekly_indicators` 确认周线级别趋势**，日线与周线共振更可靠。
+    - **关注 `divergence` 背离信号**，顶背离提示风险，底背离提示机会。
+    - **参考 `rs_strength` 判断个股强弱**，强于大盘的标的优先关注。
+
+3. **机会发掘 (Watchlist)**：
+    - 检查 `watchlist` 中的标的，寻找买入信号（如 KDJ 金叉, BOLL 支撑位反弹, MACD 翻红）。
+    - 如果满足条件，建议具体的买入价格区间。
+    - **优先推荐 `rs_strength.vs_index > 1.1` 且无顶背离的标的**。
+    - **关注 `consecutive_days` 连续下跌后的反弹机会**。
+
+4. **约束条件**：
+    - 观点要明确果断。
+    - 尽可能提到具体的价格点位。
+    - 如果某个标的信号恶劣（例如：死叉 + 空头趋势 + 顶背离），明确建议规避。
+    - 如果 `capital_flow_3d` (3日主力资金) 为大幅负值，请在买入建议中提示风险。
+    - 如果 `volatility.signal` 为"高波动"，提示风险并建议缩小仓位。
+
+# 输出格式
+请使用清晰的 Markdown 格式输出分析报告。
+"""
+        return prompt

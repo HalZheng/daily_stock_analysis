@@ -11,9 +11,10 @@ A股自选股智能分析系统 - 主调度程序
 4. 提供命令行入口
 
 使用方式：
-    python main.py              # 正常运行
+    python main.py              # 默认模式：仅获取数据 + 强制执行（跳过交易日检查）
     python main.py --debug      # 调试模式
-    python main.py --dry-run    # 仅获取数据不分析
+    python main.py --no-dry-run # 进行完整 AI 分析
+    python main.py --no-force-run # 启用交易日检查（非交易日跳过）
 
 交易理念（已融入分析）：
 - 严进策略：不追高，乖离率 > 5% 不买入
@@ -61,9 +62,11 @@ def parse_arguments() -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''
 示例:
-  python main.py                    # 正常运行
+  python main.py                    # StockPilot 模式（默认）：个人持仓分析 + 技术指标 + AI 提示词生成
+  python main.py --no-stockpilot    # 传统模式：仅获取数据 + 强制执行
   python main.py --debug            # 调试模式
-  python main.py --dry-run          # 仅获取数据，不进行 AI 分析
+  python main.py --no-dry-run       # 进行完整 AI 分析
+  python main.py --no-force-run     # 启用交易日检查（非交易日跳过）
   python main.py --stocks 600519,000001  # 指定分析特定股票
   python main.py --no-notify        # 不发送推送通知
   python main.py --single-notify    # 启用单股推送模式（每分析完一只立即推送）
@@ -79,9 +82,19 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='仅获取数据，不进行 AI 分析'
+        '--no-dry-run',
+        action='store_false',
+        dest='dry_run',
+        default=True,
+        help='进行完整 AI 分析（默认模式仅获取数据不进行 AI 分析）'
+    )
+
+    parser.add_argument(
+        '--no-force-run',
+        action='store_false',
+        dest='force_run',
+        default=True,
+        help='启用交易日检查（默认跳过检查，强制执行）'
     )
 
     parser.add_argument(
@@ -210,6 +223,21 @@ def parse_arguments() -> argparse.Namespace:
         help='强制回测（即使已有回测结果也重新计算）'
     )
 
+    # === StockPilot ===
+    parser.add_argument(
+        '--stockpilot',
+        action='store_true',
+        default=True,
+        help='Run StockPilot mode: Personal investment analysis with user profile, technical indicators, and AI prompt generation (default: True)'
+    )
+
+    parser.add_argument(
+        '--no-stockpilot',
+        action='store_false',
+        dest='stockpilot',
+        help='Disable StockPilot mode and run traditional stock analysis'
+    )
+
     return parser.parse_args()
 
 
@@ -265,7 +293,13 @@ def run_full_analysis(
 
     这是定时任务调用的主函数
     """
+    logger.info("=" * 60)
+    logger.info("开始执行完整分析流程")
+    logger.info(f"分析时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    logger.info("=" * 60)
+    
     try:
+        logger.debug(f"run_full_analysis 参数: stock_codes={stock_codes}")
         # Issue #529: Hot-reload STOCK_LIST from .env on each scheduled run
         if stock_codes is None:
             config.refresh_stock_list()
@@ -311,12 +345,15 @@ def run_full_analysis(
         )
 
         # 1. 运行个股分析
+        logger.info(f"开始个股分析，股票数量: {len(stock_codes) if stock_codes else 0}")
+        logger.debug(f"待分析股票列表: {stock_codes}")
         results = pipeline.run(
             stock_codes=stock_codes,
             dry_run=args.dry_run,
             send_notification=not args.no_notify,
             merge_notification=merge_notification
         )
+        logger.info(f"个股分析完成，结果数量: {len(results) if results else 0}")
 
         # Issue #128: 分析间隔 - 在个股分析和大盘分析之间添加延迟
         analysis_delay = getattr(config, 'analysis_delay', 0)
@@ -336,6 +373,8 @@ def run_full_analysis(
             and not args.no_market_review
             and effective_region != ''
         ):
+            logger.info("开始大盘复盘分析...")
+            logger.debug(f"大盘复盘参数: effective_region={effective_region}, merge_notification={merge_notification}")
             review_result = run_market_review(
                 notifier=pipeline.notifier,
                 analyzer=pipeline.analyzer,
@@ -347,6 +386,9 @@ def run_full_analysis(
             # 如果有结果，赋值给 market_report 用于后续飞书文档生成
             if review_result:
                 market_report = review_result
+                logger.info("大盘复盘分析完成")
+            else:
+                logger.warning("大盘复盘分析未生成报告")
 
         # Issue #190: 合并推送（个股+大盘复盘）
         if merge_notification and (results or market_report) and not args.no_notify:
@@ -378,6 +420,10 @@ def run_full_analysis(
                 )
 
         logger.info("\n任务执行完成")
+        logger.info("=" * 60)
+        logger.info("完整分析流程结束")
+        logger.info(f"结束时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info("=" * 60)
 
         # === 新增：生成飞书云文档 ===
         try:
@@ -527,11 +573,17 @@ def main() -> int:
     logger.info("A股自选股智能分析系统 启动")
     logger.info(f"运行时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     logger.info("=" * 60)
+    logger.debug(f"命令行参数: {vars(args)}")
+    logger.debug(f"Python 版本: {sys.version}")
+    logger.debug(f"工作目录: {os.getcwd()}")
 
     # 验证配置
     warnings = config.validate()
     for warning in warnings:
         logger.warning(warning)
+    
+    logger.info(f"配置加载完成: log_dir={config.log_dir}, debug={args.debug}")
+    logger.debug(f"配置详情: stock_list={config.stock_list}, schedule_enabled={getattr(config, 'schedule_enabled', False)}")
 
     # 解析股票列表（统一为大写 Issue #355）
     stock_codes = None
@@ -551,6 +603,7 @@ def main() -> int:
 
     # === 启动 Web 服务 (如果启用) ===
     start_serve = (args.serve or args.serve_only) and os.getenv("GITHUB_ACTIONS") != "true"
+    logger.debug(f"Web 服务启动判断: serve={args.serve}, serve_only={args.serve_only}, start_serve={start_serve}")
 
     # 兼容旧版 WEBUI_HOST/WEBUI_PORT：如果用户未通过 --host/--port 指定，则使用旧变量
     if start_serve:
@@ -579,6 +632,7 @@ def main() -> int:
         logger.info("通过 /api/v1/analysis/analyze 接口触发分析")
         logger.info(f"API 文档: http://{args.host}:{args.port}/docs")
         logger.info("按 Ctrl+C 退出...")
+        logger.debug("进入仅 Web 服务模式，跳过分析流程")
         try:
             while True:
                 time.sleep(1)
@@ -587,9 +641,12 @@ def main() -> int:
         return 0
 
     try:
-        # 模式0: 回测
+        logger.debug("开始判断执行模式...")
+        
+        # 模式1: 回测
         if getattr(args, 'backtest', False):
             logger.info("模式: 回测")
+            logger.debug(f"回测参数: code={getattr(args, 'backtest_code', None)}, force={getattr(args, 'backtest_force', False)}, days={getattr(args, 'backtest_days', None)}")
             from src.services.backtest_service import BacktestService
 
             service = BacktestService()
@@ -606,6 +663,7 @@ def main() -> int:
 
         # 模式1: 仅大盘复盘
         if args.market_review:
+            logger.debug("进入大盘复盘模式")
             from src.analyzer import GeminiAnalyzer
             from src.core.market_review import run_market_review
             from src.notification import NotificationService
@@ -665,6 +723,7 @@ def main() -> int:
         if args.schedule or config.schedule_enabled:
             logger.info("模式: 定时任务")
             logger.info(f"每日执行时间: {config.schedule_time}")
+            logger.debug(f"定时任务配置: schedule={args.schedule}, config.schedule_enabled={getattr(config, 'schedule_enabled', False)}")
 
             # Determine whether to run immediately:
             # Command line arg --no-run-immediately overrides config if present.
@@ -687,13 +746,69 @@ def main() -> int:
             )
             return 0
 
-        # 模式3: 正常单次运行
+        # 模式3: StockPilot (Default mode - Personal Investment Analysis)
+        if getattr(args, 'stockpilot', True):
+            logger.info("模式: StockPilot 智能投研分析")
+            logger.info("设计理念: 算法严谨性归脚本，逻辑模糊推理归 AI")
+            logger.debug(f"StockPilot 参数: workers={args.workers}, dry_run={args.dry_run}, no_notify={args.no_notify}")
+
+            pipeline = StockAnalysisPipeline(
+                config=config,
+                max_workers=args.workers,
+                query_id=uuid.uuid4().hex,
+                query_source="cli",
+            )
+
+            result = pipeline.run_stockpilot(
+                send_notification=False,
+                save_prompt=args.dry_run,
+            )
+            logger.debug(f"StockPilot 执行完成，result 类型: {type(result).__name__ if result else 'None'}")
+
+            if result:
+                logger.info(f"StockPilot 分析完成: {len(result.get('portfolio', []))} 持仓, {len(result.get('watchlist', []))} 自选")
+
+                prompt = pipeline._generate_stockpilot_prompt(result)
+
+                if not args.dry_run and (config.gemini_api_key or config.openai_api_key):
+                    from src.analyzer import GeminiAnalyzer
+                    analyzer = GeminiAnalyzer(api_key=config.gemini_api_key)
+                    if analyzer.is_available():
+                        ai_response = analyzer.generate_text(prompt)
+                        if ai_response:
+                            logger.info("AI 分析结果:")
+                            print("\n" + "=" * 80)
+                            print(ai_response)
+                            print("=" * 80 + "\n")
+
+                if not args.no_notify:
+                    from src.notification import get_notification_service
+                    notification_service = get_notification_service()
+                    if notification_service.is_available():
+                        notification_content = f"# StockPilot 智能投研分析\n\n生成时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n{prompt}"
+                        logger.info("正在发送分析结果到通知渠道...")
+                        success = notification_service.send(notification_content)
+                        if success:
+                            logger.info("通知发送成功")
+                        else:
+                            logger.warning("通知发送失败")
+                    else:
+                        logger.debug("未配置通知渠道，跳过推送")
+            else:
+                logger.warning("StockPilot 分析失败，未生成有效数据")
+
+            return 0
+
+        # 模式4: 传统单次运行（--no-stockpilot 时）
         if config.run_immediately:
+            logger.info("模式: 传统单次运行")
+            logger.debug("执行传统单次运行分析...")
             run_full_analysis(config, args, stock_codes)
         else:
             logger.info("配置为不立即运行分析 (RUN_IMMEDIATELY=false)")
 
         logger.info("\n程序执行完成")
+        logger.debug(f"程序正常退出，退出码: 0")
 
         # 如果启用了服务且是非定时任务模式，保持程序运行
         keep_running = start_serve and not (args.schedule or config.schedule_enabled)

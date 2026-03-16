@@ -1,0 +1,368 @@
+# ==========================================
+# StockPilot - Personal Investment Profile Config
+# ==========================================
+# Design Philosophy:
+# - Algorithmic rigor belongs to scripts: MA, MACD, divergence, support levels
+# - Fuzzy reasoning belongs to AI: portfolio context, news sentiment, market trends
+# - Scripts handle certainty (calculation, statistics, feature extraction)
+# - AI handles uncertainty (strategy combination, position sizing, style matching)
+#
+# This config file defines:
+# 1. User profiles with investment style and risk preferences
+# 2. Security pool with positions, tags, and strategy notes
+# 3. Data fetch preferences for technical indicators
+# 4. AI response preferences for personalized advice
+# ==========================================
+
+# ==========================================
+# 1. Global Settings
+# ==========================================
+global_config:
+  version: "1.0.0"
+  akshare_retry_count: 3
+  market_monitor:
+    indices:
+      - code: "000001.SH"
+        name: "上证指数"
+        enabled: true
+      - code: "000300.SH"
+        name: "沪深300"
+        enabled: true
+      - code: "399006.SZ"
+        name: "创业板指"
+        enabled: true
+      - code: "399001.SZ"
+        name: "深证成指"
+        enabled: true
+
+# ==========================================
+# 2. User Profiles
+# ==========================================
+profiles:
+  - profile_id: "default"
+    profile_name: "Default User"
+    is_active: true
+
+    investment_style:
+      - content: "Focus on medium to long-term returns and industry leaders"
+        enabled: true
+      - content: "Accept short-term quick trades in hot sectors"
+        enabled: true
+      - content: "Strict stop-loss at 8%"
+        enabled: true
+
+    current_macro_context:
+      - date: ""
+        summary: ""
+
+    assets:
+      total_capital: 230000.0
+      available_cash: 15000.0
+      include_cash_in_prompt: true
+
+    data_fetch_config:
+      fetch_full_realtime: false
+      fetch_main_money_flow: true
+      fetch_valuation_metrics: true
+      fetch_announcements: true
+      fetch_news_sentiment: true
+      consult_scope:
+        - "当前持仓"
+        - "重点观察"
+
+    response_preference:
+      - content: "Only list securities that require action, skip hold/observe positions"
+        enabled: true
+      - content: "Pay close attention to KDJ indicators for buy signals"
+        enabled: true
+      - content: "Provide specific operation suggestions with approximate amounts or ratios based on current market time"
+        enabled: true
+
+    security_pool:
+      - code: "600233.SH"
+        name: "圆通速递"
+        asset_type: "Stock"
+        groups:
+          - "当前持仓"
+          - "物流快递"
+        tags:
+          - "盈利持仓"
+          - "快递龙头"
+        position:
+          shares: 800
+          cost: 17.189
+          current_value: 16560.0
+        strategy_note: "盈利20%+，可考虑分批止盈"
+        private_note: ""
+        linked_ref: ""
+
+      - code: "510300.SH"
+        name: "300ETF"
+        asset_type: "ETF"
+        groups:
+          - "当前持仓"
+          - "指数工具"
+        tags:
+          - "大盘"
+          - "盈利持仓"
+        position:
+          shares: 2100
+          cost: 4.075
+          current_value: 9821.7
+        strategy_note: "沪深300ETF，盈利14%+，定投持有"
+        private_note: ""
+        linked_ref: "000300.SH"
+
+      - code: "513100.SH"
+        name: "纳指ETF"
+        asset_type: "ETF"
+        groups:
+          - "当前持仓"
+          - "指数工具"
+        tags:
+          - "美股"
+          - "盈利持仓"
+        position:
+          shares: 8000
+          cost: 1.653
+          current_value: 14136.0
+        strategy_note: "纳指ETF，盈利6%+，长期持有"
+        private_note: ""
+        linked_ref: ""
+
+      - code: "002594.SZ"
+        name: "比亚迪"
+        asset_type: "Stock"
+        groups:
+          - "当前持仓"
+          - "新能源"
+        tags:
+          - "新能源汽车"
+          - "成长股"
+        position:
+          shares: 300
+          cost: 99.867
+          current_value: 29901.0
+        strategy_note: "微亏，关注新能源政策"
+        private_note: ""
+        linked_ref: ""
+
+      - code: "600900.SH"
+        name: "长江电力"
+        asset_type: "Stock"
+        groups:
+          - "当前持仓"
+          - "公用事业"
+        tags:
+          - "水电龙头"
+          - "防御性"
+        position:
+          shares: 500
+          cost: 27.578
+          current_value: 13710.0
+        strategy_note: "公用事业龙头，防御性持仓"
+        private_note: ""
+        linked_ref: ""
+
+      - code: "601398.SH"
+        name: "工商银行"
+        asset_type: "Stock"
+        groups:
+          - "当前持仓"
+          - "银行"
+        tags:
+          - "国有大行"
+          - "高股息"
+        position:
+          shares: 700
+          cost: 7.257
+          current_value: 5040.0
+        strategy_note: "银行股，高股息策略"
+        private_note: ""
+        linked_ref: ""
+
+      - code: "603288.SH"
+        name: "海天味业"
+        asset_type: "Stock"
+        groups:
+          - "当前持仓"
+          - "消费"
+        tags:
+          - "调味品龙头"
+          - "消费白马"
+        position:
+          shares: 200
+          cost: 38.345
+          current_value: 7558.0
+        strategy_note: "消费白马，小幅亏损"
+        private_note: ""
+        linked_ref: ""
+
+      - code: "601006.SH"
+        name: "大秦铁路"
+        asset_type: "Stock"
+        groups:
+          - "当前持仓"
+          - "交通运输"
+        tags:
+          - "铁路运输"
+          - "高股息"
+        position:
+          shares: 3800
+          cost: 5.479
+          current_value: 20292.0
+        strategy_note: "铁路运输，亏损2.5%，关注经济复苏"
+        private_note: ""
+        linked_ref: ""
+
+      - code: "600030.SH"
+        name: "中信证券"
+        asset_type: "Stock"
+        groups:
+          - "当前持仓"
+          - "券商"
+        tags:
+          - "券商龙头"
+          - "牛市旗手"
+        position:
+          shares: 200
+          cost: 26.485
+          current_value: 5150.0
+        strategy_note: "券商龙头，亏损2.7%，等待行情"
+        private_note: ""
+        linked_ref: ""
+
+      - code: "511090.SH"
+        name: "30年国债"
+        asset_type: "ETF"
+        groups:
+          - "当前持仓"
+          - "债券"
+        tags:
+          - "国债"
+          - "避险"
+        position:
+          shares: 300
+          cost: 117.465
+          current_value: 34184.7
+        strategy_note: "长债ETF，亏损约3%，利率风险"
+        private_note: ""
+        linked_ref: ""
+
+      - code: "000821.SZ"
+        name: "海信家电"
+        asset_type: "Stock"
+        groups:
+          - "当前持仓"
+          - "家电"
+        tags:
+          - "白电"
+          - "家电龙头"
+        position:
+          shares: 400
+          cost: 24.125
+          current_value: 9056.0
+        strategy_note: "家电股，亏损6%，关注消费复苏"
+        private_note: ""
+        linked_ref: ""
+
+      - code: "600600.SH"
+        name: "青岛啤酒"
+        asset_type: "Stock"
+        groups:
+          - "当前持仓"
+          - "消费"
+        tags:
+          - "啤酒龙头"
+          - "消费白马"
+        position:
+          shares: 100
+          cost: 68.051
+          current_value: 6342.0
+        strategy_note: "消费白马，亏损6.8%"
+        private_note: ""
+        linked_ref: ""
+
+      - code: "600809.SH"
+        name: "山西汾酒"
+        asset_type: "Stock"
+        groups:
+          - "当前持仓"
+          - "白酒"
+        tags:
+          - "白酒"
+          - "次高端"
+        position:
+          shares: 100
+          cost: 178.142
+          current_value: 15927.0
+        strategy_note: "白酒次高端，亏损10%，关注消费复苏"
+        private_note: ""
+        linked_ref: ""
+
+      - code: "002456.SZ"
+        name: "欧菲光"
+        asset_type: "Stock"
+        groups:
+          - "当前持仓"
+          - "电子"
+        tags:
+          - "光学"
+          - "消费电子"
+        position:
+          shares: 500
+          cost: 11.533
+          current_value: 4840.0
+        strategy_note: "消费电子，亏损16%，关注手机产业链复苏"
+        private_note: ""
+        linked_ref: ""
+
+      - code: "000099.SZ"
+        name: "中信海直"
+        asset_type: "Stock"
+        groups:
+          - "当前持仓"
+          - "航空"
+        tags:
+          - "通用航空"
+          - "低空经济"
+        position:
+          shares: 400
+          cost: 24.397
+          current_value: 8080.0
+        strategy_note: "低空经济概念，亏损17%，关注政策"
+        private_note: ""
+        linked_ref: ""
+
+      - code: "601127.SH"
+        name: "赛力斯"
+        asset_type: "Stock"
+        groups:
+          - "当前持仓"
+          - "新能源"
+        tags:
+          - "新能源汽车"
+          - "华为概念"
+        position:
+          shares: 100
+          cost: 128.401
+          current_value: 10023.0
+        strategy_note: "华为汽车概念，亏损21%，关注问界销量"
+        private_note: ""
+        linked_ref: ""
+
+      - code: "600361.SH"
+        name: "创新新材"
+        asset_type: "Stock"
+        groups:
+          - "当前持仓"
+          - "材料"
+        tags:
+          - "新材料"
+        position:
+          shares: 1100
+          cost: 6.969
+          current_value: 5324.0
+        strategy_note: "新材料，亏损30%，深套中"
+        private_note: ""
+        linked_ref: ""

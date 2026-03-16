@@ -186,8 +186,19 @@ class PytdxFetcher(BaseFetcher):
                         self._current_host_idx = host_idx
                         logger.debug(f"Pytdx 连接成功: {host}:{port}")
                         break
+                    else:
+                        # connect returned False, clean up socket before trying next
+                        try:
+                            api.disconnect()
+                        except Exception:
+                            pass
                 except Exception as e:
                     logger.debug(f"Pytdx 连接 {host}:{port} 失败: {e}")
+                    # Clean up socket on exception
+                    try:
+                        api.disconnect()
+                    except Exception:
+                        pass
                     continue
             
             if not connected:

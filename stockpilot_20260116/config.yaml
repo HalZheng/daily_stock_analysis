@@ -1,0 +1,120 @@
+# ==========================================
+# 1. 全局配置 (Global Settings)
+# ==========================================
+global_config:
+  version: "1.0.0"
+  akshare_retry_count: 3  # 数据抓取重试次数 
+  market_monitor:
+    indices:
+      - code: "000001.SH"  # 上证指数
+        name: "上证指数"
+        enabled: true
+      - code: "000300.SH"  # 沪深300
+        name: "沪深300"
+        enabled: true
+
+# ==========================================
+# 2. 投资者存档 (User Profiles)
+# ==========================================
+profiles:
+  - profile_id: "user1"
+    profile_name: "张三"
+    is_active: true
+
+    # 个人投资风格定义
+    investment_style:
+      - content: "主要看中长期收益和行业龙头"
+        enabled: true
+      - content: "接受部分热点领域短期快速操作"
+        enabled: true
+      - content: "严格止损线设定在 8%"
+        enabled: true
+
+    # 当前宏观局势（AI自动总结后回写）
+    current_macro_context:
+      - date: "2026-01-09"
+        summary: "市场处于震荡筑底期，成交量萎缩，等待政策导向。"
+      - date: "2026-01-05"
+        summary: "美联储降息预期增强，人民币汇率走强。"
+      - date: "2026-01-14"
+        summary: "黄金继续冲高。"
+
+    # 资产与仓位情况
+    assets:
+      total_capital: 100000.0
+      available_cash: 15000.0
+      include_cash_in_prompt: true  # 是否让 AI 知道可用现金
+
+    # 数据获取精细度开关
+    data_fetch_config:
+      fetch_full_realtime: false    # 是否获取换手率等全量实时数据
+      fetch_main_money_flow: true   # 是否查询主力资金
+      fetch_valuation_metrics: true # 是否查询 PE/PB/百分位
+      fetch_announcements: true     # 是否获取近期公告
+      fetch_news_sentiment: true    # 是否获取新闻
+      consult_scope:                # 仅对这些分组的票进行 AI 分析
+        - "当前持仓"
+        - "重点观察"
+
+    # AI 回答风格偏好
+    response_preference:
+      - content: "请回答建议进行操作的标的，观望或继续持有的标的无需列出"
+        enabled: true
+      - content: "买入节点高度关注KDJ指标"
+        enabled: true
+      - content: "根据当前市场时间段，给出明确的操作建议，如果可以给出大致的金额或比例"
+        enabled: true
+
+    # ==========================================
+    # 3. 证券标的池 (Security Pool)
+    # ==========================================
+    security_pool:
+      - code: "600519.SH"            # 股票代码
+        name: "贵州茅台"
+        asset_type: "Stock"          # Stock/ETF
+        groups:                      # 分组标记
+          - "当前持仓"
+          - "白酒板块"
+          - "核心资产"
+        tags:                        # 自定义标签
+          - "行业龙头"
+          - "白马股"
+          - "高权重"
+        position:                    # 仅持仓时有值
+          shares: 200
+          cost: 1650.5
+          current_value: 0.0         # 运行时由 akshare 更新
+        strategy_note: "若股价回踩1600元附近可小量加仓，跌破1550元需重新评估价值。"
+        private_note: "长期持有的压舱石，每年关注分红公告。"
+        linked_ref: "801710.SI"      # 申万白酒行业代码
+
+      - code: "510300.SH"
+        name: "沪深300ETF"
+        asset_type: "ETF"
+        groups:
+          - "当前持仓"
+          - "指数工具"
+        tags:
+          - "大盘"
+          - "定投"
+        position:
+          shares: 50000
+          cost: 3.85
+        strategy_note: "跟随大盘波段，参考300定投计划。"
+        private_note: "主要对冲工具。"
+        linked_ref: "000300.SH"      # 跟踪的沪深300指数
+
+      - code: "300750.SZ"
+        name: "宁德时代"
+        asset_type: "Stock"
+        groups:
+          - "重点观察"
+          - "新能源"
+        tags:
+          - "创业板指"
+          - "成长股"
+          - "锂电池"
+        position: null               # 非持仓票设为 null
+        strategy_note: "关注新能源车补能政策出台后的反弹机会。"
+        private_note: "技术壁垒极高，观察半年报毛利率。"
+        linked_ref: "BK1027"          # 自定义板块代码（实际使用时建议用申万代码）

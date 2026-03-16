@@ -10,14 +10,30 @@ API 依赖注入模块
 3. 提供服务层依赖
 """
 
-from typing import Generator
+from typing import Generator, Optional
 
-from fastapi import Request
+from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
 from src.storage import DatabaseManager
 from src.config import get_config, Config
 from src.services.system_config_service import SystemConfigService
+
+
+def get_current_user_optional(request: Request) -> Optional[dict]:
+    """
+    Get current user from session (optional).
+    
+    Returns None if auth is not enabled or user is not logged in.
+    This is a placeholder for optional user context in endpoints.
+    
+    Args:
+        request: FastAPI request object
+        
+    Returns:
+        Optional[dict]: User info dict or None
+    """
+    return None
 
 
 def get_db() -> Generator[Session, None, None]:

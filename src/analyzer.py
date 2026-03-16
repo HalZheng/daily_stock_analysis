@@ -15,6 +15,7 @@ import logging
 import math
 import time
 from dataclasses import dataclass
+from datetime import datetime, date
 from typing import Optional, Dict, Any, List, Tuple
 
 import litellm
@@ -883,7 +884,8 @@ class GeminiAnalyzer:
     def analyze(
         self, 
         context: Dict[str, Any],
-        news_context: Optional[str] = None
+        news_context: Optional[str] = None,
+        save_prompt: bool = False
     ) -> AnalysisResult:
         """
         分析单只股票
@@ -897,6 +899,7 @@ class GeminiAnalyzer:
         Args:
             context: 从 storage.get_analysis_context() 获取的上下文数据
             news_context: 预先搜索的新闻内容（可选）
+            save_prompt: 是否保存 prompt 到文件（用于 dry-run 模式）
             
         Returns:
             AnalysisResult 对象
@@ -920,6 +923,15 @@ class GeminiAnalyzer:
                 # 最后从映射表获取
                 name = STOCK_NAME_MAP.get(code, f'股票{code}')
         
+        # 格式化输入（包含技术面数据和新闻）- 在检查模型可用性之前先格式化
+        prompt = self._format_prompt(context, name, news_context)
+        
+        # Dry-run 模式：保存 prompt 到文件并返回，不调用 AI（即使模型不可用也要保存）
+        if save_prompt:
+            self._save_prompt_to_file(code, name, prompt, context.get('date', ''))
+            logger.info(f"[{code}] Prompt 已保存，跳过 AI 调用（dry-run 模式）")
+            return None
+        
         # 如果模型不可用，返回默认结果
         if not self.is_available():
             return AnalysisResult(
@@ -937,17 +949,14 @@ class GeminiAnalyzer:
             )
         
         try:
-            # 格式化输入（包含技术面数据和新闻）
-            prompt = self._format_prompt(context, name, news_context)
-            
             config = get_config()
             model_name = config.litellm_model or "unknown"
             logger.info(f"========== AI 分析 {name}({code}) ==========")
-            logger.info(f"[LLM配置] 模型: {model_name}")
-            logger.info(f"[LLM配置] Prompt 长度: {len(prompt)} 字符")
-            logger.info(f"[LLM配置] 是否包含新闻: {'是' if news_context else '否'}")
+            logger.info(f"[LLM 配置] 模型：{model_name}")
+            logger.info(f"[LLM 配置] Prompt 长度：{len(prompt)} 字符")
+            logger.info(f"[LLM 配置] 是否包含新闻：{'是' if news_context else '否'}")
 
-            # 记录完整 prompt 到日志（INFO级别记录摘要，DEBUG记录完整）
+            # 记录完整 prompt 到日志（INFO 级别记录摘要，DEBUG 记录完整）
             prompt_preview = prompt[:500] + "..." if len(prompt) > 500 else prompt
             logger.info(f"[LLM Prompt 预览]\n{prompt_preview}")
             logger.debug(f"=== 完整 Prompt ({len(prompt)}字符) ===\n{prompt}\n=== End Prompt ===")
@@ -1028,12 +1037,608 @@ class GeminiAnalyzer:
                 trend_prediction='震荡',
                 operation_advice='持有',
                 confidence_level='低',
-                analysis_summary=f'分析过程出错: {str(e)[:100]}',
+                analysis_summary=f'分析过程出错：{str(e)[:100]}',
                 risk_warning='分析失败，请稍后重试或手动分析',
                 success=False,
                 error_message=str(e),
                 model_used=None,
             )
+    
+    def analyze_batch(
+        self,
+        batch_contexts: List[Dict[str, Any]],
+        save_prompt: bool = False,
+        batch_mode: bool = True
+    ) -> List[AnalysisResult]:
+        """
+        批量分析多只股票
+        
+        流程：
+        1. 为每只股票格式化输入数据
+        2. 合并所有股票信息到一个统一的 prompt
+        3. 调用 LLM 进行批量分析
+        4. 解析响应，为每只股票生成独立的结果
+        
+        Args:
+            batch_contexts: 批量上下文列表，每个元素包含：
+                           - context: 股票上下文数据
+                           - news_context: 新闻内容（可选）
+                           - code: 股票代码
+                           - name: 股票名称
+            save_prompt: 是否保存 prompt 到文件
+            batch_mode: 是否批量保存（True=合并到一个文件，False=每个股票单独文件）
+            
+        Returns:
+            AnalysisResult 对象列表
+        """
+        if not batch_contexts:
+            logger.warning("批量分析：上下文列表为空")
+            return []
+        
+        config = get_config()
+        analysis_date = date.today().isoformat()
+        
+        # Step 1: 为每只股票格式化 prompt
+        prompts_data = []
+        for item in batch_contexts:
+            context = item.get('context', {})
+            news_context = item.get('news_context')
+            code = item.get('code', context.get('code', 'Unknown'))
+            name = item.get('name', context.get('stock_name', 'Unknown'))
+            
+            # 格式化单只股票的 prompt
+            prompt = self._format_prompt(context, name, news_context)
+            prompts_data.append({
+                'code': code,
+                'name': name,
+                'prompt': prompt
+            })
+        
+        # Step 2: 保存 prompt 到文件（如果需要）
+        if save_prompt:
+            self._save_prompt_to_file(prompts_data, analysis_date, batch_mode=batch_mode)
+            logger.info(f"[Dry-Run] 批量 Prompt 已保存，共 {len(prompts_data)} 只股票，跳过 AI 调用")
+            return []
+        
+        # Step 3: 构建批量分析的总 prompt
+        batch_prompt = self._build_batch_prompt(prompts_data, analysis_date)
+        
+        # Step 4: 检查模型可用性
+        if not self.is_available():
+            logger.warning("LLM API 不可用，返回空结果")
+            return []
+        
+        # Step 5: 调用 LLM 进行批量分析
+        try:
+            request_delay = config.gemini_request_delay
+            if request_delay > 0:
+                logger.debug(f"[LLM] 批量分析请求前等待 {request_delay:.1f} 秒...")
+                time.sleep(request_delay)
+            
+            model_name = config.litellm_model or "unknown"
+            logger.info(f"========== AI 批量分析：{len(prompts_data)} 只股票 ==========")
+            logger.info(f"[LLM 配置] 模型：{model_name}")
+            logger.info(f"[LLM 配置] 总 Prompt 长度：{len(batch_prompt)} 字符")
+            
+            # 记录 prompt 预览
+            prompt_preview = batch_prompt[:500] + "..." if len(batch_prompt) > 500 else batch_prompt
+            logger.info(f"[LLM Prompt 预览]\n{prompt_preview}")
+            logger.debug(f"=== 完整批量 Prompt ({len(batch_prompt)}字符) ===\n{batch_prompt}\n=== End Batch Prompt ===")
+            
+            # 设置生成配置
+            generation_config = {
+                "temperature": config.gemini_temperature,
+                "max_output_tokens": 16384,  # 批量分析需要更多输出 token
+            }
+            
+            logger.info(f"[LLM 调用] 开始批量分析...")
+            start_time = time.time()
+            response_text = self._call_litellm(batch_prompt, generation_config)
+            elapsed = time.time() - start_time
+            
+            logger.info(f"[LLM 返回] 批量分析响应成功，耗时 {elapsed:.2f}s, 响应长度 {len(response_text)} 字符")
+            
+            # Step 6: 解析批量响应
+            results = self._parse_batch_response(response_text, batch_contexts)
+            
+            logger.info(f"[LLM 解析] 批量分析完成，共 {len(results)} 只股票")
+            return results
+            
+        except Exception as e:
+            logger.error(f"批量分析失败：{e}")
+            logger.exception("批量分析详细错误信息:")
+            return []
+    
+    def _build_batch_prompt(self, prompts_data: List[Dict[str, Any]], analysis_date: str) -> str:
+        """
+        构建批量分析的总 prompt
+        
+        Args:
+            prompts_data: 包含多只股票 prompt 信息的列表
+            analysis_date: 分析日期
+            
+        Returns:
+            合并后的批量分析 prompt
+        """
+        prompt = f"""# 多股票批量分析请求
+
+## 分析任务说明
+你是一位专业的股票分析师。以下提供多只股票的详细分析请求，请对每只股票进行独立分析，
+并按照指定的 JSON 格式返回所有股票的分析结果。
+
+## 分析要求
+1. 对每只股票都要进行独立、客观的分析
+2. 考虑每只股票的技术面、基本面、情绪面
+3. 返回格式为 JSON 数组，包含所有股票的分析结果
+4. 每只股票的结果必须包含完整的决策仪表盘字段
+
+## 分析日期
+{analysis_date}
+
+## 待分析股票列表（共 {len(prompts_data)} 只）
+
+"""
+        
+        for idx, item in enumerate(prompts_data, 1):
+            code = item['code']
+            name = item['name']
+            stock_prompt = item['prompt']
+            
+            prompt += f"\n{'='*80}\n"
+            prompt += f"【股票 {idx}】{name}({code})\n"
+            prompt += f"{'='*80}\n"
+            prompt += stock_prompt
+            prompt += f"\n"
+        
+        prompt += f"\n{'='*80}\n"
+        prompt += "## 输出格式要求\n"
+        prompt += f"{'='*80}\n\n"
+        prompt += """请返回一个 JSON 数组，数组中每个元素对应一只股票的分析结果。
+每个元素的格式如下：
+```json
+[
+  {
+    "code": "股票代码",
+    "stock_name": "股票名称",
+    "sentiment_score": 50,
+    "trend_prediction": "看多/看空/震荡",
+    "operation_advice": "买入/卖出/持有",
+    "decision_type": "buy/sell/hold",
+    "confidence_level": "高/中/低",
+    "dashboard": {
+      "signal_type": "BUY/SELL/HOLD",
+      "signal_strength": 3,
+      "risk_level": "MEDIUM",
+      "time_horizon": "SHORT",
+      "key_factors": ["因素 1", "因素 2"]
+    },
+    "trend_analysis": "...",
+    "technical_analysis": "...",
+    "analysis_summary": "...",
+    "risk_warning": "...",
+    ...
+  },
+  ...
+]
+```
+
+注意：
+1. 必须返回有效的 JSON 数组
+2. 数组长度必须与输入的股票数量一致
+3. 每只股票的 code 字段必须与输入一致
+4. 不要包含任何解释性文字，只返回 JSON 数组
+"""
+        
+        return prompt
+    
+    def _parse_batch_response(
+        self, 
+        response_text: str, 
+        batch_contexts: List[Dict[str, Any]]
+    ) -> List[AnalysisResult]:
+        """
+        解析批量分析的响应
+        
+        Args:
+            response_text: LLM 返回的响应文本
+            batch_contexts: 原始上下文列表（用于获取股票代码和名称）
+            
+        Returns:
+            AnalysisResult 对象列表
+        """
+        results = []
+        
+        try:
+            # 清理响应文本
+            cleaned_text = response_text
+            if '```json' in cleaned_text:
+                cleaned_text = cleaned_text.replace('```json', '').replace('```', '')
+            elif '```' in cleaned_text:
+                cleaned_text = cleaned_text.replace('```', '')
+            
+            # 尝试找到 JSON 数组
+            json_start = cleaned_text.find('[')
+            json_end = cleaned_text.rfind(']') + 1
+            
+            if json_start < 0 or json_end <= json_start:
+                logger.error("无法从响应中提取 JSON 数组")
+                return []
+            
+            json_str = cleaned_text[json_start:json_end]
+            json_str = self._fix_json_string(json_str)
+            
+            data_array = json.loads(json_str)
+            
+            if not isinstance(data_array, list):
+                logger.error("响应不是 JSON 数组格式")
+                return []
+            
+            # 为每个结果创建 AnalysisResult
+            for idx, data in enumerate(data_array):
+                # 从原始上下文获取代码和名称
+                if idx < len(batch_contexts):
+                    item = batch_contexts[idx]
+                    code = item.get('code', data.get('code', 'Unknown'))
+                    name = item.get('name', data.get('stock_name', 'Unknown'))
+                else:
+                    code = data.get('code', 'Unknown')
+                    name = data.get('stock_name', 'Unknown')
+                
+                # 使用 AI 返回的股票名称（如果原名称无效）
+                ai_stock_name = data.get('stock_name')
+                if ai_stock_name and (name.startswith('股票') or name == code or 'Unknown' in name):
+                    name = ai_stock_name
+                
+                # 解析 decision_type
+                decision_type = data.get('decision_type', '')
+                if not decision_type:
+                    op = data.get('operation_advice', '持有')
+                    if op in ['买入', '加仓', '强烈买入']:
+                        decision_type = 'buy'
+                    elif op in ['卖出', '减仓', '强烈卖出']:
+                        decision_type = 'sell'
+                    else:
+                        decision_type = 'hold'
+                
+                result = AnalysisResult(
+                    code=code,
+                    name=name,
+                    sentiment_score=int(data.get('sentiment_score', 50)),
+                    trend_prediction=data.get('trend_prediction', '震荡'),
+                    operation_advice=data.get('operation_advice', '持有'),
+                    decision_type=decision_type,
+                    confidence_level=data.get('confidence_level', '中'),
+                    dashboard=data.get('dashboard'),
+                    trend_analysis=data.get('trend_analysis', ''),
+                    short_term_outlook=data.get('short_term_outlook', ''),
+                    medium_term_outlook=data.get('medium_term_outlook', ''),
+                    technical_analysis=data.get('technical_analysis', ''),
+                    ma_analysis=data.get('ma_analysis', ''),
+                    volume_analysis=data.get('volume_analysis', ''),
+                    pattern_analysis=data.get('pattern_analysis', ''),
+                    fundamental_analysis=data.get('fundamental_analysis', ''),
+                    sector_position=data.get('sector_position', ''),
+                    company_highlights=data.get('company_highlights', ''),
+                    news_summary=data.get('news_summary', ''),
+                    market_sentiment=data.get('market_sentiment', ''),
+                    hot_topics=data.get('hot_topics', ''),
+                    analysis_summary=data.get('analysis_summary', '分析完成'),
+                    key_points=data.get('key_points', ''),
+                    risk_warning=data.get('risk_warning', ''),
+                    buy_reason=data.get('buy_reason', ''),
+                    search_performed=data.get('search_performed', False),
+                    data_sources=data.get('data_sources', '技术面数据'),
+                    success=True,
+                )
+                results.append(result)
+            
+            logger.info(f"成功解析 {len(results)} 只股票的分析结果")
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"批量响应 JSON 解析失败：{e}")
+        except Exception as e:
+            logger.error(f"解析批量响应失败：{e}")
+            logger.exception("详细错误信息:")
+        
+        return results
+    
+    def analyze_batch(
+        self,
+        batch_contexts: List[Dict[str, Any]],
+        save_prompt: bool = False,
+        batch_mode: bool = True
+    ) -> List[AnalysisResult]:
+        """
+        批量分析多只股票
+        
+        流程：
+        1. 为每只股票格式化输入数据
+        2. 合并所有股票信息到一个统一的 prompt
+        3. 调用 LLM 进行批量分析
+        4. 解析响应，为每只股票生成独立的结果
+        
+        Args:
+            batch_contexts: 批量上下文列表，每个元素包含：
+                           - context: 股票上下文数据
+                           - news_context: 新闻内容（可选）
+                           - code: 股票代码
+                           - name: 股票名称
+            save_prompt: 是否保存 prompt 到文件
+            batch_mode: 是否批量保存（True=合并到一个文件，False=每个股票单独文件）
+            
+        Returns:
+            AnalysisResult 对象列表
+        """
+        if not batch_contexts:
+            logger.warning("批量分析：上下文列表为空")
+            return []
+        
+        config = get_config()
+        analysis_date = date.today().isoformat()
+        
+        # Step 1: 为每只股票格式化 prompt
+        prompts_data = []
+        for item in batch_contexts:
+            context = item.get('context', {})
+            news_context = item.get('news_context')
+            code = item.get('code', context.get('code', 'Unknown'))
+            name = item.get('name', context.get('stock_name', 'Unknown'))
+            
+            # 格式化单只股票的 prompt
+            prompt = self._format_prompt(context, name, news_context)
+            prompts_data.append({
+                'code': code,
+                'name': name,
+                'prompt': prompt
+            })
+        
+        # Step 2: 保存 prompt 到文件（如果需要）
+        if save_prompt:
+            self._save_prompt_to_file(prompts_data, analysis_date, batch_mode=batch_mode)
+            logger.info(f"[Dry-Run] 批量 Prompt 已保存，共 {len(prompts_data)} 只股票，跳过 AI 调用")
+            return []
+        
+        # Step 3: 构建批量分析的总 prompt
+        batch_prompt = self._build_batch_prompt(prompts_data, analysis_date)
+        
+        # Step 4: 检查模型可用性
+        if not self.is_available():
+            logger.warning("LLM API 不可用，返回空结果")
+            return []
+        
+        # Step 5: 调用 LLM 进行批量分析
+        try:
+            request_delay = config.gemini_request_delay
+            if request_delay > 0:
+                logger.debug(f"[LLM] 批量分析请求前等待 {request_delay:.1f} 秒...")
+                time.sleep(request_delay)
+            
+            model_name = config.litellm_model or "unknown"
+            logger.info(f"========== AI 批量分析：{len(prompts_data)} 只股票 ==========")
+            logger.info(f"[LLM 配置] 模型：{model_name}")
+            logger.info(f"[LLM 配置] 总 Prompt 长度：{len(batch_prompt)} 字符")
+            
+            # 记录 prompt 预览
+            prompt_preview = batch_prompt[:500] + "..." if len(batch_prompt) > 500 else batch_prompt
+            logger.info(f"[LLM Prompt 预览]\n{prompt_preview}")
+            logger.debug(f"=== 完整批量 Prompt ({len(batch_prompt)}字符) ===\n{batch_prompt}\n=== End Batch Prompt ===")
+            
+            # 设置生成配置
+            generation_config = {
+                "temperature": config.gemini_temperature,
+                "max_output_tokens": 16384,  # 批量分析需要更多输出 token
+            }
+            
+            logger.info(f"[LLM 调用] 开始批量分析...")
+            start_time = time.time()
+            response_text = self._call_litellm(batch_prompt, generation_config)
+            elapsed = time.time() - start_time
+            
+            logger.info(f"[LLM 返回] 批量分析响应成功，耗时 {elapsed:.2f}s, 响应长度 {len(response_text)} 字符")
+            
+            # Step 6: 解析批量响应
+            results = self._parse_batch_response(response_text, batch_contexts)
+            
+            logger.info(f"[LLM 解析] 批量分析完成，共 {len(results)} 只股票")
+            return results
+            
+        except Exception as e:
+            logger.error(f"批量分析失败：{e}")
+            logger.exception("批量分析详细错误信息:")
+            return []
+    
+    def _build_batch_prompt(self, prompts_data: List[Dict[str, Any]], analysis_date: str) -> str:
+        """
+        构建批量分析的总 prompt
+        
+        Args:
+            prompts_data: 包含多只股票 prompt 信息的列表
+            analysis_date: 分析日期
+            
+        Returns:
+            合并后的批量分析 prompt
+        """
+        prompt = f"""# 多股票批量分析请求
+
+## 分析任务说明
+你是一位专业的股票分析师。以下提供多只股票的详细分析请求，请对每只股票进行独立分析，
+并按照指定的 JSON 格式返回所有股票的分析结果。
+
+## 分析要求
+1. 对每只股票都要进行独立、客观的分析
+2. 考虑每只股票的技术面、基本面、情绪面
+3. 返回格式为 JSON 数组，包含所有股票的分析结果
+4. 每只股票的结果必须包含完整的决策仪表盘字段
+
+## 分析日期
+{analysis_date}
+
+## 待分析股票列表（共 {len(prompts_data)} 只）
+
+"""
+        
+        for idx, item in enumerate(prompts_data, 1):
+            code = item['code']
+            name = item['name']
+            stock_prompt = item['prompt']
+            
+            prompt += f"\n{'='*80}\n"
+            prompt += f"【股票 {idx}】{name}({code})\n"
+            prompt += f"{'='*80}\n"
+            prompt += stock_prompt
+            prompt += f"\n"
+        
+        prompt += f"\n{'='*80}\n"
+        prompt += "## 输出格式要求\n"
+        prompt += f"{'='*80}\n\n"
+        prompt += """请返回一个 JSON 数组，数组中每个元素对应一只股票的分析结果。
+每个元素的格式如下：
+```json
+[
+  {
+    "code": "股票代码",
+    "stock_name": "股票名称",
+    "sentiment_score": 50,
+    "trend_prediction": "看多/看空/震荡",
+    "operation_advice": "买入/卖出/持有",
+    "decision_type": "buy/sell/hold",
+    "confidence_level": "高/中/低",
+    "dashboard": {
+      "signal_type": "BUY/SELL/HOLD",
+      "signal_strength": 3,
+      "risk_level": "MEDIUM",
+      "time_horizon": "SHORT",
+      "key_factors": ["因素 1", "因素 2"]
+    },
+    "trend_analysis": "...",
+    "technical_analysis": "...",
+    "analysis_summary": "...",
+    "risk_warning": "...",
+    ...
+  },
+  ...
+]
+```
+
+注意：
+1. 必须返回有效的 JSON 数组
+2. 数组长度必须与输入的股票数量一致
+3. 每只股票的 code 字段必须与输入一致
+4. 不要包含任何解释性文字，只返回 JSON 数组
+"""
+        
+        return prompt
+    
+    def _parse_batch_response(
+        self, 
+        response_text: str, 
+        batch_contexts: List[Dict[str, Any]]
+    ) -> List[AnalysisResult]:
+        """
+        解析批量分析的响应
+        
+        Args:
+            response_text: LLM 返回的响应文本
+            batch_contexts: 原始上下文列表（用于获取股票代码和名称）
+            
+        Returns:
+            AnalysisResult 对象列表
+        """
+        results = []
+        
+        try:
+            # 清理响应文本
+            cleaned_text = response_text
+            if '```json' in cleaned_text:
+                cleaned_text = cleaned_text.replace('```json', '').replace('```', '')
+            elif '```' in cleaned_text:
+                cleaned_text = cleaned_text.replace('```', '')
+            
+            # 尝试找到 JSON 数组
+            json_start = cleaned_text.find('[')
+            json_end = cleaned_text.rfind(']') + 1
+            
+            if json_start < 0 or json_end <= json_start:
+                logger.error("无法从响应中提取 JSON 数组")
+                return []
+            
+            json_str = cleaned_text[json_start:json_end]
+            json_str = self._fix_json_string(json_str)
+            
+            data_array = json.loads(json_str)
+            
+            if not isinstance(data_array, list):
+                logger.error("响应不是 JSON 数组格式")
+                return []
+            
+            # 为每个结果创建 AnalysisResult
+            for idx, data in enumerate(data_array):
+                # 从原始上下文获取代码和名称
+                if idx < len(batch_contexts):
+                    item = batch_contexts[idx]
+                    code = item.get('code', data.get('code', 'Unknown'))
+                    name = item.get('name', data.get('stock_name', 'Unknown'))
+                else:
+                    code = data.get('code', 'Unknown')
+                    name = data.get('stock_name', 'Unknown')
+                
+                # 使用 AI 返回的股票名称（如果原名称无效）
+                ai_stock_name = data.get('stock_name')
+                if ai_stock_name and (name.startswith('股票') or name == code or 'Unknown' in name):
+                    name = ai_stock_name
+                
+                # 解析 decision_type
+                decision_type = data.get('decision_type', '')
+                if not decision_type:
+                    op = data.get('operation_advice', '持有')
+                    if op in ['买入', '加仓', '强烈买入']:
+                        decision_type = 'buy'
+                    elif op in ['卖出', '减仓', '强烈卖出']:
+                        decision_type = 'sell'
+                    else:
+                        decision_type = 'hold'
+                
+                result = AnalysisResult(
+                    code=code,
+                    name=name,
+                    sentiment_score=int(data.get('sentiment_score', 50)),
+                    trend_prediction=data.get('trend_prediction', '震荡'),
+                    operation_advice=data.get('operation_advice', '持有'),
+                    decision_type=decision_type,
+                    confidence_level=data.get('confidence_level', '中'),
+                    dashboard=data.get('dashboard'),
+                    trend_analysis=data.get('trend_analysis', ''),
+                    short_term_outlook=data.get('short_term_outlook', ''),
+                    medium_term_outlook=data.get('medium_term_outlook', ''),
+                    technical_analysis=data.get('technical_analysis', ''),
+                    ma_analysis=data.get('ma_analysis', ''),
+                    volume_analysis=data.get('volume_analysis', ''),
+                    pattern_analysis=data.get('pattern_analysis', ''),
+                    fundamental_analysis=data.get('fundamental_analysis', ''),
+                    sector_position=data.get('sector_position', ''),
+                    company_highlights=data.get('company_highlights', ''),
+                    news_summary=data.get('news_summary', ''),
+                    market_sentiment=data.get('market_sentiment', ''),
+                    hot_topics=data.get('hot_topics', ''),
+                    analysis_summary=data.get('analysis_summary', '分析完成'),
+                    key_points=data.get('key_points', ''),
+                    risk_warning=data.get('risk_warning', ''),
+                    buy_reason=data.get('buy_reason', ''),
+                    search_performed=data.get('search_performed', False),
+                    data_sources=data.get('data_sources', '技术面数据'),
+                    success=True,
+                )
+                results.append(result)
+            
+            logger.info(f"成功解析 {len(results)} 只股票的分析结果")
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"批量响应 JSON 解析失败：{e}")
+        except Exception as e:
+            logger.error(f"解析批量响应失败：{e}")
+            logger.exception("详细错误信息:")
+        
+        return results
     
     def _format_prompt(
         self, 
@@ -1360,6 +1965,72 @@ class GeminiAnalyzer:
     def _apply_placeholder_fill(self, result: AnalysisResult, missing_fields: List[str]) -> None:
         """Delegate to module-level apply_placeholder_fill."""
         apply_placeholder_fill(result, missing_fields)
+
+    def _save_prompt_to_file(
+        self, 
+        prompts_data: List[Dict[str, Any]], 
+        date: str,
+        batch_mode: bool = True
+    ) -> None:
+        """
+        保存 prompt 到文件
+        
+        Args:
+            prompts_data: 包含多个股票 prompt 信息的列表
+                         每个元素包含：{'code': str, 'name': str, 'prompt': str}
+            date: 分析日期
+            batch_mode: 是否批量保存（True=所有股票合并到一个文件，False=每个股票单独文件）
+        """
+        from pathlib import Path
+        
+        # 创建 prompts 目录
+        prompts_dir = Path('prompts')
+        prompts_dir.mkdir(exist_ok=True)
+        
+        # 使用时间戳命名文件
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        
+        if batch_mode:
+            # 批量模式：所有股票保存到一个文件
+            filename = f"{timestamp}_batch_analysis.txt"
+            file_path = prompts_dir / filename
+            
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(f"# AI 批量分析提示词 - 共 {len(prompts_data)} 只股票\n")
+                f.write(f"分析日期：{date}\n")
+                f.write(f"生成时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write("=" * 80 + "\n\n")
+                
+                for idx, item in enumerate(prompts_data, 1):
+                    code = item['code']
+                    name = item['name']
+                    prompt = item['prompt']
+                    
+                    f.write(f"\n{'='*80}\n")
+                    f.write(f"股票 {idx}: {name}({code})\n")
+                    f.write(f"{'='*80}\n\n")
+                    f.write(prompt)
+                    f.write(f"\n\n{'='*80}\n")
+            
+            logger.info(f"[Dry-Run] 批量 Prompt 已保存到：{file_path} (共 {len(prompts_data)} 只股票)")
+        else:
+            # 单独模式：每个股票保存为单独文件（原有逻辑）
+            for item in prompts_data:
+                code = item['code']
+                name = item['name']
+                prompt = item['prompt']
+                
+                filename = f"{timestamp}_{code}_{name}.txt"
+                file_path = prompts_dir / filename
+                
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(f"# AI 分析提示词 - {name}({code})\n")
+                    f.write(f"分析日期：{date}\n")
+                    f.write(f"生成时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                    f.write("=" * 80 + "\n\n")
+                    f.write(prompt)
+                
+                logger.info(f"[Dry-Run] Prompt 已保存到：{file_path}")
 
     def _parse_response(
         self, 

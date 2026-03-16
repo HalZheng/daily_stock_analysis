@@ -620,49 +620,64 @@ class Config:
         2. .env 文件
         3. 代码中的默认值
         """
+        import logging
+        _logger = logging.getLogger(__name__)
+        
         # 确保环境变量已加载
         setup_env()
 
         # === 智能代理配置 (关键修复) ===
-        # 如果配置了代理，自动设置 NO_PROXY 以排除国内数据源，避免行情获取失败
-        http_proxy = os.getenv('HTTP_PROXY') or os.getenv('http_proxy')
-        if http_proxy:
-            # 国内金融数据源域名列表
-            domestic_domains = [
-                'eastmoney.com',   # 东方财富 (Efinance/Akshare)
-                'sina.com.cn',     # 新浪财经 (Akshare)
-                '163.com',         # 网易财经 (Akshare)
-                'tushare.pro',     # Tushare
-                'baostock.com',    # Baostock
-                'sse.com.cn',      # 上交所
-                'szse.cn',         # 深交所
-                'csindex.com.cn',  # 中证指数
-                'cninfo.com.cn',   # 巨潮资讯
-                'localhost',
-                '127.0.0.1'
-            ]
+        # DISABLE_PROXY: explicitly disable all proxy settings (useful when system proxy is broken)
+        disable_proxy = os.getenv('DISABLE_PROXY', 'false').lower() in ('true', '1', 'yes')
+        
+        if disable_proxy:
+            # Clear all proxy environment variables
+            for var in ['HTTP_PROXY', 'http_proxy', 'HTTPS_PROXY', 'https_proxy', 'ALL_PROXY', 'all_proxy']:
+                os.environ.pop(var, None)
+            _logger.info("Proxy disabled via DISABLE_PROXY=true")
+        else:
+            # If proxy is configured, auto-set NO_PROXY to exclude domestic data sources
+            http_proxy = os.getenv('HTTP_PROXY') or os.getenv('http_proxy')
+            if http_proxy:
+                # Domestic financial data source domains
+                domestic_domains = [
+                    'eastmoney.com',   # 东方财富 (Efinance/Akshare)
+                    'push2his.eastmoney.com',  # 东方财富 API
+                    'sina.com.cn',     # 新浪财经 (Akshare)
+                    '163.com',         # 网易财经 (Akshare)
+                    'tushare.pro',     # Tushare
+                    'baostock.com',    # Baostock
+                    'sse.com.cn',      # 上交所
+                    'szse.cn',         # 深交所
+                    'csindex.com.cn',  # 中证指数
+                    'cninfo.com.cn',   # 巨潮资讯
+                    'localhost',
+                    '127.0.0.1'
+                ]
 
-            # 获取现有的 no_proxy
-            current_no_proxy = os.getenv('NO_PROXY') or os.getenv('no_proxy') or ''
-            existing_domains = current_no_proxy.split(',') if current_no_proxy else []
+                # Get existing no_proxy
+                current_no_proxy = os.getenv('NO_PROXY') or os.getenv('no_proxy') or ''
+                existing_domains = current_no_proxy.split(',') if current_no_proxy else []
 
-            # 合并去重
-            final_domains = list(set(existing_domains + domestic_domains))
-            final_no_proxy = ','.join(filter(None, final_domains))
+                # Merge and deduplicate
+                final_domains = list(set(existing_domains + domestic_domains))
+                final_no_proxy = ','.join(filter(None, final_domains))
 
-            # 设置环境变量 (requests/urllib3/aiohttp 都会遵守此设置)
-            os.environ['NO_PROXY'] = final_no_proxy
-            os.environ['no_proxy'] = final_no_proxy
+                # Set environment variables (requests/urllib3/aiohttp all respect this)
+                os.environ['NO_PROXY'] = final_no_proxy
+                os.environ['no_proxy'] = final_no_proxy
 
-            # 确保 HTTP_PROXY 也被正确设置（以防仅在 .env 中定义但未导出）
-            os.environ['HTTP_PROXY'] = http_proxy
-            os.environ['http_proxy'] = http_proxy
+                # Ensure HTTP_PROXY is properly set (in case only defined in .env but not exported)
+                os.environ['HTTP_PROXY'] = http_proxy
+                os.environ['http_proxy'] = http_proxy
 
-            # HTTPS_PROXY 同理
-            https_proxy = os.getenv('HTTPS_PROXY') or os.getenv('https_proxy')
-            if https_proxy:
-                os.environ['HTTPS_PROXY'] = https_proxy
-                os.environ['https_proxy'] = https_proxy
+                # HTTPS_PROXY same logic
+                https_proxy = os.getenv('HTTPS_PROXY') or os.getenv('https_proxy')
+                if https_proxy:
+                    os.environ['HTTPS_PROXY'] = https_proxy
+                    os.environ['https_proxy'] = https_proxy
+                
+                _logger.info(f"Proxy configured: {http_proxy}, NO_PROXY set for domestic sources")
 
         
         # 解析自选股列表（逗号分隔，统一为大写 Issue #355）
